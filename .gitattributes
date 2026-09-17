@@ -1,0 +1,9 @@
+# Auto-detect text files and perform LF normalization
+* text=auto
+
+# Exclude unnecessary files from export-zip / composer archives
+.github export-ignore
+tests export-ignore
+phpunit.xml export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
