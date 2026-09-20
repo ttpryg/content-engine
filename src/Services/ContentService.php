@@ -35,13 +35,15 @@ class ContentService
         array $meta = [],
         string $status = 'draft',
         int $sortOrder = 0,
-        int|string|null $authorId = null
+        int|string|null $authorId = null,
+        ?string $tenantType = null,
+        int|string|null $tenantId = null
     ): Content {
         if (! ContentStatus::isValid($status)) {
             throw new InvalidContentStatusException($status);
         }
 
-        $generatedSlug = $slug ?: $this->generateUniqueSlug($title, $type);
+        $generatedSlug = $slug ?: $this->generateUniqueSlug($title, $type, $tenantType, $tenantId);
 
         $publishedAt = ($status === ContentStatus::PUBLISHED->value) ? new DateTimeImmutable : null;
 
@@ -55,6 +57,8 @@ class ContentService
             status: $status,
             sortOrder: $sortOrder,
             authorId: $authorId,
+            tenantType: $tenantType,
+            tenantId: $tenantId,
             publishedAt: $publishedAt
         );
 
@@ -122,9 +126,9 @@ class ContentService
         return $result;
     }
 
-    public function getContentBySlug(string $slug, string $type = 'post'): Content
+    public function getContentBySlug(string $slug, string $type = 'post', ?string $tenantType = null, int|string|null $tenantId = null): Content
     {
-        $content = $this->contentRepository->findBySlug($slug, $type);
+        $content = $this->contentRepository->findBySlug($slug, $type, false, $tenantType, $tenantId);
         if (! $content) {
             throw ContentNotFoundException::bySlug($slug, $type);
         }
@@ -134,13 +138,13 @@ class ContentService
         return $content;
     }
 
-    private function generateUniqueSlug(string $title, string $type): string
+    private function generateUniqueSlug(string $title, string $type, ?string $tenantType = null, int|string|null $tenantId = null): string
     {
         $baseSlug = $this->slugGenerator->generate($title);
         $slug = $baseSlug;
         $counter = 1;
 
-        while ($this->contentRepository->findBySlug($slug, $type) !== null) {
+        while ($this->contentRepository->findBySlug($slug, $type, false, $tenantType, $tenantId) !== null) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }

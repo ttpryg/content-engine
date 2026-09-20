@@ -22,6 +22,9 @@ class PdoContentRepositoryTest extends TestCase
         $this->pdo->exec("
             CREATE TABLE contents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenant_type VARCHAR(50) NULL,
+                tenant_id VARCHAR(100) NULL,
+                author_id INT NULL,
                 type VARCHAR(30) NOT NULL,
                 title VARCHAR(255) NOT NULL,
                 slug VARCHAR(255) NULL,
@@ -31,7 +34,6 @@ class PdoContentRepositoryTest extends TestCase
                 status VARCHAR(20) NOT NULL DEFAULT 'draft',
                 sort_order INT NOT NULL DEFAULT 0,
                 view_count INT NOT NULL DEFAULT 0,
-                author_id INT NULL,
                 published_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -62,6 +64,24 @@ class PdoContentRepositoryTest extends TestCase
         $this->assertNotNull($found);
         $this->assertEquals('Welcome to CMS', $found->getTitle());
         $this->assertEquals(['author_name' => 'Admin'], $found->getMeta());
+    }
+
+    // POSITIVE CASE: Find By Tenant (Multi-Store / Multi-Tenant Scoping)
+    public function test_find_by_tenant(): void
+    {
+        $globalPost = new Content('Global Announcement', type: 'post', status: 'published');
+        $storePost1 = new Content('Store 101 Promo', type: 'post', status: 'published', tenantType: 'store', tenantId: '101');
+        $storePost2 = new Content('Store 202 Promo', type: 'post', status: 'published', tenantType: 'store', tenantId: '202');
+
+        $this->repository->save($globalPost);
+        $this->repository->save($storePost1);
+        $this->repository->save($storePost2);
+
+        $store101Posts = $this->repository->findByTenant('store', '101', 'post');
+        $this->assertCount(1, $store101Posts);
+        $this->assertEquals('Store 101 Promo', $store101Posts[0]->getTitle());
+        $this->assertEquals('store', $store101Posts[0]->getTenantType());
+        $this->assertEquals('101', $store101Posts[0]->getTenantId());
     }
 
     // POSITIVE CASE: Query All with Filter & Increments

@@ -1,13 +1,17 @@
 # ContentEngine Library
 
-`ttpryg/content-engine` is a framework-agnostic standalone PHP library for CMS content management (posts, pages, testimonials, FAQs), taxonomy (categories/tags), automatic slug generation, metadata wrapping, and status lifecycle management.
+`ttpryg/content-engine` is a framework-agnostic standalone PHP library for CMS content management (posts, pages, testimonials, FAQs), taxonomy (categories/tags), polymorphic multi-tenant scoping (`tenant_type`, `tenant_id`), automatic slug generation, metadata wrapping, and status lifecycle management.
 
 ## 🌟 Key Features
 
 - **Framework Agnostic**: Compatible with any PHP 8.1+ project (Vanilla PHP, Slim, Laravel, Symfony, CodeIgniter).
+- **Polymorphic Multi-Tenant Scoping**:
+  - `tenant_type` & `tenant_id`: Generic scoping for stores (`store`), companies (`company`), blogs (`blog`), or organizations (`findByTenant`).
+  - `author_id`: Track author/user ownership from `auth-user` (`findByAuthorId`).
+  - `null` scoping: Global platform content managed by system admins (e.g. Terms of Service, Main Platform Blog).
 - **Multi-Content Support**: Standardized handling for `post`, `page`, `testimonial`, `faq`, or custom content types.
 - **Improved Database Schema**:
-  - `contents` table with `summary` (excerpt), `sort_order`, `view_count`, `deleted_at` (soft deletes), and `meta` (JSON).
+  - `contents` table with `tenant_type`, `tenant_id`, `author_id`, `summary` (excerpt), `sort_order`, `view_count`, `deleted_at` (soft deletes), and `meta` (JSON).
   - `categories` & `content_category` tables for Taxonomy (Categories & Tags).
 - **Strongly Typed Meta Wrappers**:
   - `TestimonialMeta`: Company, Position, Rating, Avatar URL.
@@ -24,7 +28,10 @@ Run the SQL script from `database/schema.sql` or use `DatabaseMigrator`:
 ```sql
 CREATE TABLE IF NOT EXISTS contents (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    type VARCHAR(30) NOT NULL,
+    tenant_type VARCHAR(50) NULL COMMENT 'Tipe tenant (store, company, blog)',
+    tenant_id VARCHAR(100) NULL COMMENT 'ID tenant',
+    author_id BIGINT UNSIGNED NULL COMMENT 'ID User (AuthUser)',
+    type VARCHAR(30) NOT NULL COMMENT 'page, post, testimonial, faq',
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NULL,
     summary VARCHAR(500) NULL,
@@ -33,14 +40,14 @@ CREATE TABLE IF NOT EXISTS contents (
     status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
     sort_order INT NOT NULL DEFAULT 0,
     view_count BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    author_id BIGINT UNSIGNED NULL,
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_tenant_content (tenant_type, tenant_id, type, status),
+    INDEX idx_author_content (author_id, status),
     INDEX idx_type_status_published (type, status, published_at),
-    INDEX idx_slug_type (slug, type),
-    INDEX idx_sort (type, sort_order)
+    INDEX idx_slug_type (slug, type)
 );
 ```
 
@@ -54,34 +61,32 @@ use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
 use Ttpryg\ContentEngine\Services\ContentService;
 use Ttpryg\ContentEngine\ValueObjects\TestimonialMeta;
 
-// 1. Initialize PDO
+// 1. Initialize PDO & Services
 $pdo = new PDO("mysql:host=localhost;dbname=my_db", "root", "secret");
-
-// 2. Setup Service
 $contentRepo = new PdoContentRepository($pdo);
 $contentService = new ContentService($contentRepo);
 
-// 3. Create a Blog Post
-$post = $contentService->createContent(
-    title: 'Getting Started with Content Engine',
+// 2. Create Global Platform Announcement (Admin)
+$globalPost = $contentService->createContent(
+    title: 'Platform Maintenance Schedule',
     type: 'post',
-    summary: 'A complete guide to CMS content management.',
-    body: '<p>Full HTML content goes here...</p>',
+    body: 'System will be updated on Sunday...',
     status: 'published'
 );
 
-// 4. Create a Testimonial with Typed Meta
-$meta = new TestimonialMeta(company: 'Google', position: 'Tech Lead', rating: 5);
-$testimonial = $contentService->createContent(
-    title: 'John Doe',
-    type: 'testimonial',
-    body: 'Awesome CMS library!',
-    meta: $meta->toArray(),
-    status: 'published'
+// 3. Create Store-Specific News (Owner of Store 101)
+$storePost = $contentService->createContent(
+    title: 'Grand Opening Sale at Toko Sepatu Jaya!',
+    type: 'post',
+    body: 'Visit our store for 50% off...',
+    status: 'published',
+    authorId: 77,         // User ID from auth-user
+    tenantType: 'store',  // Tenant Scope
+    tenantId: '101'       // Store ID
 );
 
-// 5. Query Published Posts
-$publishedPosts = $contentRepo->findAll(['type' => 'post', 'status' => 'published']);
+// 4. Query Posts for Store 101
+$storePosts = $contentRepo->findByTenant(tenantType: 'store', tenantId: '101', type: 'post');
 ```
 
 ---

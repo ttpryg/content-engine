@@ -1,8 +1,11 @@
 -- ContentEngine Database Schema
--- Standard MySQL / MariaDB DDL
+-- Standard MySQL / MariaDB DDL with Polymorphic Multi-Tenant support
 
 CREATE TABLE IF NOT EXISTS contents (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tenant_type VARCHAR(50) NULL COMMENT 'Tipe tenant, misal: store, company, blog, platform (null = global)',
+    tenant_id VARCHAR(100) NULL COMMENT 'ID tenant (null = global)',
+    author_id BIGINT UNSIGNED NULL COMMENT 'ID User pembuat/penulis dari auth-user',
     type VARCHAR(30) NOT NULL COMMENT 'page, post, testimonial, faq',
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NULL,
@@ -12,11 +15,12 @@ CREATE TABLE IF NOT EXISTS contents (
     status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
     sort_order INT NOT NULL DEFAULT 0,
     view_count BIGINT UNSIGNED NOT NULL DEFAULT 0,
-    author_id BIGINT UNSIGNED NULL,
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_tenant_content (tenant_type, tenant_id, type, status),
+    INDEX idx_author_content (author_id, status),
     INDEX idx_type_status_published (type, status, published_at),
     INDEX idx_slug_type (slug, type),
     INDEX idx_sort (type, sort_order)
