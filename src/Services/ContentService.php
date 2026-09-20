@@ -23,7 +23,7 @@ class ContentService
         private ?SlugGeneratorInterface $slugGenerator = null,
         private ?EventDispatcherInterface $eventDispatcher = null
     ) {
-        $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator();
+        $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator;
     }
 
     public function createContent(
@@ -37,13 +37,13 @@ class ContentService
         int $sortOrder = 0,
         int|string|null $authorId = null
     ): Content {
-        if (!ContentStatus::isValid($status)) {
+        if (! ContentStatus::isValid($status)) {
             throw new InvalidContentStatusException($status);
         }
 
         $generatedSlug = $slug ?: $this->generateUniqueSlug($title, $type);
 
-        $publishedAt = ($status === ContentStatus::PUBLISHED->value) ? new DateTimeImmutable() : null;
+        $publishedAt = ($status === ContentStatus::PUBLISHED->value) ? new DateTimeImmutable : null;
 
         $content = new Content(
             title: $title,
@@ -72,13 +72,13 @@ class ContentService
     public function publish(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (!$content) {
+        if (! $content) {
             throw ContentNotFoundException::byId($id);
         }
 
         $content->setStatus(ContentStatus::PUBLISHED->value);
         if ($content->getPublishedAt() === null) {
-            $content->setPublishedAt(new DateTimeImmutable());
+            $content->setPublishedAt(new DateTimeImmutable);
         }
 
         $result = $this->contentRepository->update($content);
@@ -92,7 +92,7 @@ class ContentService
     public function archive(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (!$content) {
+        if (! $content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -109,7 +109,7 @@ class ContentService
     public function delete(int|string $id, bool $softDelete = true): bool
     {
         $content = $this->contentRepository->findById($id, true);
-        if (!$content) {
+        if (! $content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -125,7 +125,7 @@ class ContentService
     public function getContentBySlug(string $slug, string $type = 'post'): Content
     {
         $content = $this->contentRepository->findBySlug($slug, $type);
-        if (!$content) {
+        if (! $content) {
             throw ContentNotFoundException::bySlug($slug, $type);
         }
 

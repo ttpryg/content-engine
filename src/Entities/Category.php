@@ -8,9 +8,13 @@ use DateTimeInterface;
 class Category
 {
     private int|string|null $id;
+
     private string $name;
+
     private string $slug;
+
     private string $type;
+
     private ?DateTimeInterface $createdAt;
 
     public function __construct(
@@ -24,7 +28,7 @@ class Category
         $this->name = $name;
         $this->slug = $slug;
         $this->type = $type;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
+        $this->createdAt = $createdAt ?? new DateTimeImmutable;
     }
 
     public function getId(): int|string|null
@@ -35,6 +39,7 @@ class Category
     public function setId(int|string $id): self
     {
         $this->id = $id;
+
         return $this;
     }
 
@@ -46,6 +51,7 @@ class Category
     public function setName(string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -57,6 +63,7 @@ class Category
     public function setSlug(string $slug): self
     {
         $this->slug = $slug;
+
         return $this;
     }
 
@@ -68,6 +75,7 @@ class Category
     public function setType(string $type): self
     {
         $this->type = $type;
+
         return $this;
     }
 

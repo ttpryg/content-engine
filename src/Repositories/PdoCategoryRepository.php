@@ -10,7 +10,9 @@ use Ttpryg\ContentEngine\Entities\Category;
 class PdoCategoryRepository implements CategoryRepositoryInterface
 {
     private PDO $pdo;
+
     private string $table;
+
     private string $pivotTable;
 
     public function __construct(PDO $pdo, string $table = 'categories', string $pivotTable = 'content_category')
@@ -27,6 +29,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         $stmt->execute(['id' => $id]);
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $data ? $this->mapToEntity($data) : null;
     }
 
@@ -37,6 +40,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         $stmt->execute(['slug' => $slug]);
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $data ? $this->mapToEntity($data) : null;
     }
 
@@ -75,6 +79,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
     {
         $sql = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute(['id' => $id]);
     }
 
@@ -82,6 +87,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
     {
         $sql = "INSERT IGNORE INTO {$this->pivotTable} (content_id, category_id) VALUES (:content_id, :category_id)";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute([
             'content_id' => $contentId,
             'category_id' => $categoryId,
@@ -92,6 +98,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
     {
         $sql = "DELETE FROM {$this->pivotTable} WHERE content_id = :content_id AND category_id = :category_id";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute([
             'content_id' => $contentId,
             'category_id' => $categoryId,
@@ -123,7 +130,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
             slug: $data['slug'],
             type: $data['type'] ?? 'category',
             id: $data['id'],
-            createdAt: !empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null
+            createdAt: ! empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null
         );
     }
 }
