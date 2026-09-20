@@ -28,6 +28,6 @@ class SeoMeta
             'meta_description' => $this->metaDescription,
             'og_image' => $this->ogImage,
             'keywords' => $this->keywords,
-        ], fn ($val) => $val !== null);
+        ], fn (string|array|null $val): bool => $val !== null);
     }
 }

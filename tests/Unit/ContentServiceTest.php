@@ -23,22 +23,22 @@ class ContentServiceTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
 
         $slugGen->method('generate')->with('My First Post')->willReturn('my-first-post');
-        $repo->method('findBySlug')->willReturn(null);
+        $repo->method('findBySlug')->willReturn(value: null);
 
         $repo->expects($this->once())
             ->method('save')
-            ->willReturnCallback(function (Content $c) {
-                $c->setId(1);
+            ->willReturnCallback(function (Content $content): \Ttpryg\ContentEngine\Entities\Content {
+                $content->setId(1);
 
-                return $c;
+                return $content;
             });
 
         $dispatcher->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(ContentCreatedEvent::class));
 
-        $service = new ContentService($repo, $slugGen, $dispatcher);
-        $content = $service->createContent('My First Post', type: 'post', body: 'Hello world');
+        $contentService = new ContentService($repo, $slugGen, $dispatcher);
+        $content = $contentService->createContent('My First Post', type: 'post', body: 'Hello world');
 
         $this->assertEquals(1, $content->getId());
         $this->assertEquals('my-first-post', $content->getSlug());
@@ -52,8 +52,8 @@ class ContentServiceTest extends TestCase
 
         $this->expectException(InvalidContentStatusException::class);
 
-        $service = new ContentService($repo);
-        $service->createContent('Invalid Post', status: 'non_existent_status');
+        $contentService = new ContentService($repo);
+        $contentService->createContent('Invalid Post', status: 'non_existent_status');
     }
 
     // POSITIVE CASE: Publish Content
@@ -64,14 +64,14 @@ class ContentServiceTest extends TestCase
 
         $content = new Content('Draft Post', status: 'draft', id: 5);
         $repo->method('findById')->with(5)->willReturn($content);
-        $repo->method('update')->willReturn(true);
+        $repo->method('update')->willReturn(value: true);
 
         $dispatcher->expects($this->once())
             ->method('dispatch')
             ->with($this->isInstanceOf(ContentPublishedEvent::class));
 
-        $service = new ContentService($repo, null, $dispatcher);
-        $result = $service->publish(5);
+        $contentService = new ContentService($repo, eventDispatcher: $dispatcher);
+        $result = $contentService->publish(5);
 
         $this->assertTrue($result);
         $this->assertEquals('published', $content->getStatus());
@@ -82,11 +82,11 @@ class ContentServiceTest extends TestCase
     public function test_publish_fails_on_non_existent_content(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
-        $repo->method('findById')->with(999)->willReturn(null);
+        $repo->method('findById')->with(999)->willReturn(value: null);
 
         $this->expectException(ContentNotFoundException::class);
 
-        $service = new ContentService($repo);
-        $service->publish(999);
+        $contentService = new ContentService($repo);
+        $contentService->publish(999);
     }
 }

@@ -28,6 +28,6 @@ class TestimonialMeta
             'position' => $this->position,
             'rating' => $this->rating,
             'avatar_url' => $this->avatarUrl,
-        ], fn ($val) => $val !== null);
+        ], fn (int|string|null $val): bool => $val !== null);
     }
 }

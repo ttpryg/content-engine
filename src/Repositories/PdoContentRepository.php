@@ -9,15 +9,7 @@ use Ttpryg\ContentEngine\Entities\Content;
 
 class PdoContentRepository implements ContentRepositoryInterface
 {
-    private PDO $pdo;
-
-    private string $table;
-
-    public function __construct(PDO $pdo, string $table = 'contents')
-    {
-        $this->pdo = $pdo;
-        $this->table = $table;
-    }
+    public function __construct(private readonly PDO $pdo, private readonly string $table = 'contents') {}
 
     public function findById(int|string $id, bool $includeTrashed = false): ?Content
     {
@@ -310,7 +302,7 @@ class PdoContentRepository implements ContentRepositoryInterface
     {
         $meta = [];
         if (! empty($data['meta'])) {
-            $decoded = json_decode($data['meta'], true);
+            $decoded = json_decode($data['meta'], associative: true);
             if (is_array($decoded)) {
                 $meta = $decoded;
             }

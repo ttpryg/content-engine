@@ -15,7 +15,7 @@ class NativeSlugGenerator implements SlugGeneratorInterface
         // Transliterate
         $slug = iconv('utf-8', 'us-ascii//TRANSLIT', $slug) ?: $slug;
         // Remove unwanted characters
-        $slug = preg_replace('~[^-\w]+~', '', $slug);
+        $slug = preg_replace('~[^\-\w]+~', '', $slug);
         // Trim hyphens
         $slug = trim($slug, '-');
         // Remove duplicate hyphens

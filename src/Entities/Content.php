@@ -9,76 +9,34 @@ use Ttpryg\ContentEngine\ValueObjects\ContentStatus;
 
 class Content implements ContentInterface
 {
-    private int|string|null $id;
-
-    private ?string $tenantType;
-
-    private int|string|null $tenantId;
-
-    private int|string|null $authorId;
-
-    private string $type;
-
-    private string $title;
-
-    private ?string $slug;
-
-    private ?string $summary;
-
-    private ?string $body;
-
-    private array $meta;
-
     private string $status;
 
-    private int $sortOrder;
-
-    private int $viewCount;
-
-    private ?DateTimeInterface $publishedAt;
-
-    private ?DateTimeInterface $createdAt;
+    private readonly ?DateTimeInterface $createdAt;
 
     private ?DateTimeInterface $updatedAt;
 
-    private ?DateTimeInterface $deletedAt;
-
     public function __construct(
-        string $title,
-        string $type = 'post',
-        ?string $slug = null,
-        ?string $summary = null,
-        ?string $body = null,
-        array $meta = [],
+        private string $title,
+        private string $type = 'post',
+        private ?string $slug = null,
+        private ?string $summary = null,
+        private ?string $body = null,
+        private array $meta = [],
         string $status = 'draft',
-        int $sortOrder = 0,
-        int $viewCount = 0,
-        int|string|null $authorId = null,
-        ?string $tenantType = null,
-        int|string|null $tenantId = null,
-        ?DateTimeInterface $publishedAt = null,
-        int|string|null $id = null,
+        private int $sortOrder = 0,
+        private int $viewCount = 0,
+        private int|string|null $authorId = null,
+        private ?string $tenantType = null,
+        private int|string|null $tenantId = null,
+        private ?DateTimeInterface $publishedAt = null,
+        private int|string|null $id = null,
         ?DateTimeInterface $createdAt = null,
         ?DateTimeInterface $updatedAt = null,
-        ?DateTimeInterface $deletedAt = null
+        private ?DateTimeInterface $deletedAt = null
     ) {
-        $this->id = $id;
-        $this->tenantType = $tenantType;
-        $this->tenantId = $tenantId;
-        $this->authorId = $authorId;
-        $this->title = $title;
-        $this->type = $type;
-        $this->slug = $slug;
-        $this->summary = $summary;
-        $this->body = $body;
-        $this->meta = $meta;
         $this->status = ContentStatus::isValid($status) ? $status : ContentStatus::DRAFT->value;
-        $this->sortOrder = $sortOrder;
-        $this->viewCount = $viewCount;
-        $this->publishedAt = $publishedAt;
         $this->createdAt = $createdAt ?? new DateTimeImmutable;
         $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
-        $this->deletedAt = $deletedAt;
     }
 
     public function getId(): int|string|null

@@ -1,17 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ttpryg\ContentEngine\Database;
 
 use PDO;
 
 class DatabaseMigrator
 {
-    private PDO $pdo;
-
-    public function __construct(PDO $pdo)
-    {
-        $this->pdo = $pdo;
-    }
+    public function __construct(private readonly PDO $pdo) {}
 
     public function migrate(): void
     {
