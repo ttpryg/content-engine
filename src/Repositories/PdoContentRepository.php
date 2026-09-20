@@ -34,19 +34,54 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $data ? $this->mapToEntity($data) : null;
     }
 
-    public function findBySlug(string $slug, string $type = 'post', bool $includeTrashed = false): ?Content
+    public function findBySlug(string $slug, string $type = 'post', bool $includeTrashed = false, ?string $tenantType = null, int|string|null $tenantId = null): ?Content
     {
         $sql = "SELECT * FROM {$this->table} WHERE slug = :slug AND type = :type";
+        $params = ['slug' => $slug, 'type' => $type];
+
         if (! $includeTrashed) {
             $sql .= ' AND deleted_at IS NULL';
         }
 
+        if ($tenantType !== null) {
+            $sql .= ' AND tenant_type = :tenant_type';
+            $params['tenant_type'] = $tenantType;
+        }
+
+        if ($tenantId !== null) {
+            $sql .= ' AND tenant_id = :tenant_id';
+            $params['tenant_id'] = $tenantId;
+        }
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['slug' => $slug, 'type' => $type]);
+        $stmt->execute($params);
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $data ? $this->mapToEntity($data) : null;
+    }
+
+    public function findByTenant(?string $tenantType, int|string|null $tenantId, ?string $type = null, int $limit = 20, int $offset = 0): array
+    {
+        $criteria = [
+            'tenant_type' => $tenantType,
+            'tenant_id' => $tenantId,
+        ];
+        if ($type !== null) {
+            $criteria['type'] = $type;
+        }
+
+        return $this->findAll($criteria, $limit, $offset);
+    }
+
+    public function findByAuthorId(int|string $authorId, ?string $type = null, int $limit = 20, int $offset = 0): array
+    {
+        $criteria = ['author_id' => $authorId];
+        if ($type !== null) {
+            $criteria['type'] = $type;
+        }
+
+        return $this->findAll($criteria, $limit, $offset);
     }
 
     public function findAll(array $criteria = [], int $limit = 20, int $offset = 0, array $orderBy = ['created_at' => 'DESC']): array
@@ -62,6 +97,24 @@ class PdoContentRepository implements ContentRepositoryInterface
         if (isset($criteria['status'])) {
             $where[] = 'status = :status';
             $params['status'] = $criteria['status'];
+        }
+
+        if (array_key_exists('tenant_type', $criteria)) {
+            if ($criteria['tenant_type'] === null) {
+                $where[] = 'tenant_type IS NULL';
+            } else {
+                $where[] = 'tenant_type = :tenant_type';
+                $params['tenant_type'] = $criteria['tenant_type'];
+            }
+        }
+
+        if (array_key_exists('tenant_id', $criteria)) {
+            if ($criteria['tenant_id'] === null) {
+                $where[] = 'tenant_id IS NULL';
+            } else {
+                $where[] = 'tenant_id = :tenant_id';
+                $params['tenant_id'] = $criteria['tenant_id'];
+            }
         }
 
         if (isset($criteria['author_id'])) {
@@ -116,6 +169,29 @@ class PdoContentRepository implements ContentRepositoryInterface
             $params['status'] = $criteria['status'];
         }
 
+        if (array_key_exists('tenant_type', $criteria)) {
+            if ($criteria['tenant_type'] === null) {
+                $where[] = 'tenant_type IS NULL';
+            } else {
+                $where[] = 'tenant_type = :tenant_type';
+                $params['tenant_type'] = $criteria['tenant_type'];
+            }
+        }
+
+        if (array_key_exists('tenant_id', $criteria)) {
+            if ($criteria['tenant_id'] === null) {
+                $where[] = 'tenant_id IS NULL';
+            } else {
+                $where[] = 'tenant_id = :tenant_id';
+                $params['tenant_id'] = $criteria['tenant_id'];
+            }
+        }
+
+        if (isset($criteria['author_id'])) {
+            $where[] = 'author_id = :author_id';
+            $params['author_id'] = $criteria['author_id'];
+        }
+
         $whereSql = implode(' AND ', $where);
         $sql = "SELECT COUNT(*) FROM {$this->table} WHERE {$whereSql}";
 
@@ -128,11 +204,14 @@ class PdoContentRepository implements ContentRepositoryInterface
     public function save(Content $content): Content
     {
         $sql = "INSERT INTO {$this->table} 
-                (type, title, slug, summary, body, meta, status, sort_order, view_count, author_id, published_at, created_at, updated_at) 
-                VALUES (:type, :title, :slug, :summary, :body, :meta, :status, :sort_order, :view_count, :author_id, :published_at, :created_at, :updated_at)";
+                (tenant_type, tenant_id, author_id, type, title, slug, summary, body, meta, status, sort_order, view_count, published_at, created_at, updated_at) 
+                VALUES (:tenant_type, :tenant_id, :author_id, :type, :title, :slug, :summary, :body, :meta, :status, :sort_order, :view_count, :published_at, :created_at, :updated_at)";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
+            'tenant_type' => $content->getTenantType(),
+            'tenant_id' => $content->getTenantId(),
+            'author_id' => $content->getAuthorId(),
             'type' => $content->getType(),
             'title' => $content->getTitle(),
             'slug' => $content->getSlug(),
@@ -142,7 +221,6 @@ class PdoContentRepository implements ContentRepositoryInterface
             'status' => $content->getStatus(),
             'sort_order' => $content->getSortOrder(),
             'view_count' => $content->getViewCount(),
-            'author_id' => $content->getAuthorId(),
             'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
             'created_at' => $content->getCreatedAt()?->format('Y-m-d H:i:s'),
             'updated_at' => $content->getUpdatedAt()?->format('Y-m-d H:i:s'),
@@ -157,7 +235,10 @@ class PdoContentRepository implements ContentRepositoryInterface
     public function update(Content $content): bool
     {
         $sql = "UPDATE {$this->table} 
-                SET type = :type, 
+                SET tenant_type = :tenant_type,
+                    tenant_id = :tenant_id,
+                    author_id = :author_id,
+                    type = :type, 
                     title = :title, 
                     slug = :slug, 
                     summary = :summary, 
@@ -166,7 +247,6 @@ class PdoContentRepository implements ContentRepositoryInterface
                     status = :status, 
                     sort_order = :sort_order, 
                     view_count = :view_count, 
-                    author_id = :author_id, 
                     published_at = :published_at, 
                     updated_at = :updated_at 
                 WHERE id = :id";
@@ -175,6 +255,9 @@ class PdoContentRepository implements ContentRepositoryInterface
 
         return $stmt->execute([
             'id' => $content->getId(),
+            'tenant_type' => $content->getTenantType(),
+            'tenant_id' => $content->getTenantId(),
+            'author_id' => $content->getAuthorId(),
             'type' => $content->getType(),
             'title' => $content->getTitle(),
             'slug' => $content->getSlug(),
@@ -184,7 +267,6 @@ class PdoContentRepository implements ContentRepositoryInterface
             'status' => $content->getStatus(),
             'sort_order' => $content->getSortOrder(),
             'view_count' => $content->getViewCount(),
-            'author_id' => $content->getAuthorId(),
             'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
             'updated_at' => (new DateTimeImmutable)->format('Y-m-d H:i:s'),
         ]);
@@ -245,6 +327,8 @@ class PdoContentRepository implements ContentRepositoryInterface
             sortOrder: (int) ($data['sort_order'] ?? 0),
             viewCount: (int) ($data['view_count'] ?? 0),
             authorId: $data['author_id'] ?? null,
+            tenantType: $data['tenant_type'] ?? null,
+            tenantId: $data['tenant_id'] ?? null,
             publishedAt: ! empty($data['published_at']) ? new DateTimeImmutable($data['published_at']) : null,
             id: $data['id'],
             createdAt: ! empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null,

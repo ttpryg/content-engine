@@ -11,6 +11,12 @@ class Content implements ContentInterface
 {
     private int|string|null $id;
 
+    private ?string $tenantType;
+
+    private int|string|null $tenantId;
+
+    private int|string|null $authorId;
+
     private string $type;
 
     private string $title;
@@ -28,8 +34,6 @@ class Content implements ContentInterface
     private int $sortOrder;
 
     private int $viewCount;
-
-    private int|string|null $authorId;
 
     private ?DateTimeInterface $publishedAt;
 
@@ -50,6 +54,8 @@ class Content implements ContentInterface
         int $sortOrder = 0,
         int $viewCount = 0,
         int|string|null $authorId = null,
+        ?string $tenantType = null,
+        int|string|null $tenantId = null,
         ?DateTimeInterface $publishedAt = null,
         int|string|null $id = null,
         ?DateTimeInterface $createdAt = null,
@@ -57,6 +63,9 @@ class Content implements ContentInterface
         ?DateTimeInterface $deletedAt = null
     ) {
         $this->id = $id;
+        $this->tenantType = $tenantType;
+        $this->tenantId = $tenantId;
+        $this->authorId = $authorId;
         $this->title = $title;
         $this->type = $type;
         $this->slug = $slug;
@@ -66,7 +75,6 @@ class Content implements ContentInterface
         $this->status = ContentStatus::isValid($status) ? $status : ContentStatus::DRAFT->value;
         $this->sortOrder = $sortOrder;
         $this->viewCount = $viewCount;
-        $this->authorId = $authorId;
         $this->publishedAt = $publishedAt;
         $this->createdAt = $createdAt ?? new DateTimeImmutable;
         $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
@@ -81,6 +89,42 @@ class Content implements ContentInterface
     public function setId(int|string $id): self
     {
         $this->id = $id;
+
+        return $this;
+    }
+
+    public function getTenantType(): ?string
+    {
+        return $this->tenantType;
+    }
+
+    public function setTenantType(?string $tenantType): self
+    {
+        $this->tenantType = $tenantType;
+
+        return $this;
+    }
+
+    public function getTenantId(): int|string|null
+    {
+        return $this->tenantId;
+    }
+
+    public function setTenantId(int|string|null $tenantId): self
+    {
+        $this->tenantId = $tenantId;
+
+        return $this;
+    }
+
+    public function getAuthorId(): int|string|null
+    {
+        return $this->authorId;
+    }
+
+    public function setAuthorId(int|string|null $authorId): self
+    {
+        $this->authorId = $authorId;
 
         return $this;
     }
@@ -195,18 +239,6 @@ class Content implements ContentInterface
         return $this;
     }
 
-    public function getAuthorId(): int|string|null
-    {
-        return $this->authorId;
-    }
-
-    public function setAuthorId(int|string|null $authorId): self
-    {
-        $this->authorId = $authorId;
-
-        return $this;
-    }
-
     public function getPublishedAt(): ?DateTimeInterface
     {
         return $this->publishedAt;
@@ -252,6 +284,9 @@ class Content implements ContentInterface
     {
         return [
             'id' => $this->id,
+            'tenant_type' => $this->tenantType,
+            'tenant_id' => $this->tenantId,
+            'author_id' => $this->authorId,
             'type' => $this->type,
             'title' => $this->title,
             'slug' => $this->slug,
@@ -261,7 +296,6 @@ class Content implements ContentInterface
             'status' => $this->status,
             'sort_order' => $this->sortOrder,
             'view_count' => $this->viewCount,
-            'author_id' => $this->authorId,
             'published_at' => $this->publishedAt?->format(DateTimeInterface::ATOM),
             'created_at' => $this->createdAt?->format(DateTimeInterface::ATOM),
             'updated_at' => $this->updatedAt?->format(DateTimeInterface::ATOM),
