@@ -9,18 +9,7 @@ use Ttpryg\ContentEngine\Entities\Category;
 
 class PdoCategoryRepository implements CategoryRepositoryInterface
 {
-    private PDO $pdo;
-
-    private string $table;
-
-    private string $pivotTable;
-
-    public function __construct(PDO $pdo, string $table = 'categories', string $pivotTable = 'content_category')
-    {
-        $this->pdo = $pdo;
-        $this->table = $table;
-        $this->pivotTable = $pivotTable;
-    }
+    public function __construct(private readonly PDO $pdo, private readonly string $table = 'categories', private readonly string $pivotTable = 'content_category') {}
 
     public function findById(int|string $id): ?Category
     {

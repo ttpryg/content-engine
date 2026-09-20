@@ -11,7 +11,7 @@ class PdoContentRepositoryTest extends TestCase
 {
     private PDO $pdo;
 
-    private PdoContentRepository $repository;
+    private PdoContentRepository $pdoContentRepository;
 
     protected function setUp(): void
     {
@@ -41,7 +41,7 @@ class PdoContentRepositoryTest extends TestCase
             )
         ");
 
-        $this->repository = new PdoContentRepository($this->pdo);
+        $this->pdoContentRepository = new PdoContentRepository($this->pdo);
     }
 
     // POSITIVE CASE: Save and Find
@@ -57,10 +57,10 @@ class PdoContentRepositoryTest extends TestCase
             status: 'published'
         );
 
-        $saved = $this->repository->save($content);
+        $saved = $this->pdoContentRepository->save($content);
         $this->assertNotNull($saved->getId());
 
-        $found = $this->repository->findBySlug('welcome-to-cms', 'page');
+        $found = $this->pdoContentRepository->findBySlug('welcome-to-cms', 'page');
         $this->assertNotNull($found);
         $this->assertEquals('Welcome to CMS', $found->getTitle());
         $this->assertEquals(['author_name' => 'Admin'], $found->getMeta());
@@ -73,11 +73,11 @@ class PdoContentRepositoryTest extends TestCase
         $storePost1 = new Content('Store 101 Promo', type: 'post', status: 'published', tenantType: 'store', tenantId: '101');
         $storePost2 = new Content('Store 202 Promo', type: 'post', status: 'published', tenantType: 'store', tenantId: '202');
 
-        $this->repository->save($globalPost);
-        $this->repository->save($storePost1);
-        $this->repository->save($storePost2);
+        $this->pdoContentRepository->save($globalPost);
+        $this->pdoContentRepository->save($storePost1);
+        $this->pdoContentRepository->save($storePost2);
 
-        $store101Posts = $this->repository->findByTenant('store', '101', 'post');
+        $store101Posts = $this->pdoContentRepository->findByTenant('store', '101', 'post');
         $this->assertCount(1, $store101Posts);
         $this->assertEquals('Store 101 Promo', $store101Posts[0]->getTitle());
         $this->assertEquals('store', $store101Posts[0]->getTenantType());
@@ -91,17 +91,17 @@ class PdoContentRepositoryTest extends TestCase
         $c2 = new Content('Post 2', type: 'post', status: 'draft');
         $c3 = new Content('Page 1', type: 'page', status: 'published');
 
-        $this->repository->save($c1);
-        $this->repository->save($c2);
-        $this->repository->save($c3);
+        $this->pdoContentRepository->save($c1);
+        $this->pdoContentRepository->save($c2);
+        $this->pdoContentRepository->save($c3);
 
-        $publishedPosts = $this->repository->findAll(['type' => 'post', 'status' => 'published']);
+        $publishedPosts = $this->pdoContentRepository->findAll(['type' => 'post', 'status' => 'published']);
         $this->assertCount(1, $publishedPosts);
         $this->assertEquals('Post 1', $publishedPosts[0]->getTitle());
 
         // Test Increment Views
-        $this->repository->incrementViews($publishedPosts[0]->getId());
-        $updated = $this->repository->findById($publishedPosts[0]->getId());
+        $this->pdoContentRepository->incrementViews($publishedPosts[0]->getId());
+        $updated = $this->pdoContentRepository->findById($publishedPosts[0]->getId());
         $this->assertEquals(1, $updated->getViewCount());
     }
 
@@ -109,12 +109,12 @@ class PdoContentRepositoryTest extends TestCase
     public function test_soft_delete_content(): void
     {
         $content = new Content('ToDelete', type: 'post');
-        $saved = $this->repository->save($content);
+        $saved = $this->pdoContentRepository->save($content);
         $id = $saved->getId();
 
-        $this->repository->delete($id, softDelete: true);
+        $this->pdoContentRepository->delete($id, softDelete: true);
 
-        $this->assertNull($this->repository->findById($id, includeTrashed: false));
-        $this->assertNotNull($this->repository->findById($id, includeTrashed: true));
+        $this->assertNull($this->pdoContentRepository->findById($id, includeTrashed: false));
+        $this->assertNotNull($this->pdoContentRepository->findById($id, includeTrashed: true));
     }
 }

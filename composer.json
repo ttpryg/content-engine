@@ -1,8 +1,8 @@
 {
     "name": "ttpryg/content-engine",
     "description": "A framework-agnostic standalone CMS content engine library for PHP.",
-    "type": "library",
     "license": "MIT",
+    "type": "library",
     "authors": [
         {
             "name": "Toto",
@@ -13,9 +13,13 @@
         "php": ">=8.1"
     },
     "require-dev": {
+        "ergebnis/composer-normalize": "^2.53",
+        "laravel/pint": "^1.20",
         "phpunit/phpunit": "^10.0",
-        "laravel/pint": "^1.20"
+        "rector/rector": "^2.6"
     },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Ttpryg\\ContentEngine\\": "src/"
@@ -26,14 +30,20 @@
             "Ttpryg\\ContentEngine\\Tests\\": "tests/"
         }
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
-    "scripts": {
-        "test": "vendor/bin/phpunit",
-        "fix:check": "vendor/bin/pint --test",
-        "fix": "vendor/bin/pint"
-    },
     "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true
+        },
         "sort-packages": true
+    },
+    "scripts": {
+        "fix": [
+            "vendor/bin/rector process",
+            "vendor/bin/pint"
+        ],
+        "fix:check": [
+            "vendor/bin/rector process --dry-run",
+            "vendor/bin/pint --test"],
+        "test": "vendor/bin/phpunit"
     }
 }

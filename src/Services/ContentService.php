@@ -19,9 +19,9 @@ use Ttpryg\ContentEngine\ValueObjects\ContentStatus;
 class ContentService
 {
     public function __construct(
-        private ContentRepositoryInterface $contentRepository,
+        private readonly ContentRepositoryInterface $contentRepository,
         private ?SlugGeneratorInterface $slugGenerator = null,
-        private ?EventDispatcherInterface $eventDispatcher = null
+        private readonly ?EventDispatcherInterface $eventDispatcher = null
     ) {
         $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator;
     }
@@ -76,12 +76,12 @@ class ContentService
     public function publish(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (! $content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
         $content->setStatus(ContentStatus::PUBLISHED->value);
-        if ($content->getPublishedAt() === null) {
+        if (! $content->getPublishedAt() instanceof \DateTimeInterface) {
             $content->setPublishedAt(new DateTimeImmutable);
         }
 
@@ -96,7 +96,7 @@ class ContentService
     public function archive(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (! $content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -112,8 +112,8 @@ class ContentService
 
     public function delete(int|string $id, bool $softDelete = true): bool
     {
-        $content = $this->contentRepository->findById($id, true);
-        if (! $content) {
+        $content = $this->contentRepository->findById($id, includeTrashed: true);
+        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -128,8 +128,8 @@ class ContentService
 
     public function getContentBySlug(string $slug, string $type = 'post', ?string $tenantType = null, int|string|null $tenantId = null): Content
     {
-        $content = $this->contentRepository->findBySlug($slug, $type, false, $tenantType, $tenantId);
-        if (! $content) {
+        $content = $this->contentRepository->findBySlug($slug, $type, includeTrashed: false, tenantType: $tenantType, tenantId: $tenantId);
+        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
             throw ContentNotFoundException::bySlug($slug, $type);
         }
 
@@ -144,7 +144,7 @@ class ContentService
         $slug = $baseSlug;
         $counter = 1;
 
-        while ($this->contentRepository->findBySlug($slug, $type, false, $tenantType, $tenantId) !== null) {
+        while ($this->contentRepository->findBySlug($slug, $type, includeTrashed: false, tenantType: $tenantType, tenantId: $tenantId) instanceof \Ttpryg\ContentEngine\Entities\Content) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }
