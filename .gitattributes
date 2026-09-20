@@ -9,4 +9,4 @@ tests export-ignore
 .gitignore export-ignore
 docker-compose.yml export-ignore
 phpunit.xml export-ignore
-recttor.php export-ignore
+rector.php export-ignore
