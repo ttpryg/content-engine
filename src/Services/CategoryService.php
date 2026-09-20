@@ -14,7 +14,7 @@ class CategoryService
         private CategoryRepositoryInterface $categoryRepository,
         private ?SlugGeneratorInterface $slugGenerator = null
     ) {
-        $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator();
+        $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator;
     }
 
     public function createCategory(string $name, string $type = 'category', ?string $slug = null): Category
@@ -33,7 +33,7 @@ class CategoryService
     public function attachCategoryToContent(int|string $contentId, int|string $categoryId): bool
     {
         $category = $this->categoryRepository->findById($categoryId);
-        if (!$category) {
+        if (! $category) {
             throw CategoryNotFoundException::byId($categoryId);
         }
 

@@ -10,6 +10,7 @@ use Ttpryg\ContentEngine\Entities\Content;
 class PdoContentRepository implements ContentRepositoryInterface
 {
     private PDO $pdo;
+
     private string $table;
 
     public function __construct(PDO $pdo, string $table = 'contents')
@@ -21,28 +22,30 @@ class PdoContentRepository implements ContentRepositoryInterface
     public function findById(int|string $id, bool $includeTrashed = false): ?Content
     {
         $sql = "SELECT * FROM {$this->table} WHERE id = :id";
-        if (!$includeTrashed) {
-            $sql .= " AND deleted_at IS NULL";
+        if (! $includeTrashed) {
+            $sql .= ' AND deleted_at IS NULL';
         }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $id]);
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $data ? $this->mapToEntity($data) : null;
     }
 
     public function findBySlug(string $slug, string $type = 'post', bool $includeTrashed = false): ?Content
     {
         $sql = "SELECT * FROM {$this->table} WHERE slug = :slug AND type = :type";
-        if (!$includeTrashed) {
-            $sql .= " AND deleted_at IS NULL";
+        if (! $includeTrashed) {
+            $sql .= ' AND deleted_at IS NULL';
         }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['slug' => $slug, 'type' => $type]);
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $data ? $this->mapToEntity($data) : null;
     }
 
@@ -52,23 +55,23 @@ class PdoContentRepository implements ContentRepositoryInterface
         $params = [];
 
         if (isset($criteria['type'])) {
-            $where[] = "type = :type";
+            $where[] = 'type = :type';
             $params['type'] = $criteria['type'];
         }
 
         if (isset($criteria['status'])) {
-            $where[] = "status = :status";
+            $where[] = 'status = :status';
             $params['status'] = $criteria['status'];
         }
 
         if (isset($criteria['author_id'])) {
-            $where[] = "author_id = :author_id";
+            $where[] = 'author_id = :author_id';
             $params['author_id'] = $criteria['author_id'];
         }
 
         if (isset($criteria['search'])) {
-            $where[] = "(title LIKE :search OR body LIKE :search)";
-            $params['search'] = '%' . $criteria['search'] . '%';
+            $where[] = '(title LIKE :search OR body LIKE :search)';
+            $params['search'] = '%'.$criteria['search'].'%';
         }
 
         $whereSql = implode(' AND ', $where);
@@ -104,12 +107,12 @@ class PdoContentRepository implements ContentRepositoryInterface
         $params = [];
 
         if (isset($criteria['type'])) {
-            $where[] = "type = :type";
+            $where[] = 'type = :type';
             $params['type'] = $criteria['type'];
         }
 
         if (isset($criteria['status'])) {
-            $where[] = "status = :status";
+            $where[] = 'status = :status';
             $params['status'] = $criteria['status'];
         }
 
@@ -169,6 +172,7 @@ class PdoContentRepository implements ContentRepositoryInterface
                 WHERE id = :id";
 
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute([
             'id' => $content->getId(),
             'type' => $content->getType(),
@@ -182,7 +186,7 @@ class PdoContentRepository implements ContentRepositoryInterface
             'view_count' => $content->getViewCount(),
             'author_id' => $content->getAuthorId(),
             'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
-            'updated_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'updated_at' => (new DateTimeImmutable)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -191,14 +195,16 @@ class PdoContentRepository implements ContentRepositoryInterface
         if ($softDelete) {
             $sql = "UPDATE {$this->table} SET deleted_at = :deleted_at WHERE id = :id";
             $stmt = $this->pdo->prepare($sql);
+
             return $stmt->execute([
                 'id' => $id,
-                'deleted_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                'deleted_at' => (new DateTimeImmutable)->format('Y-m-d H:i:s'),
             ]);
         }
 
         $sql = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute(['id' => $id]);
     }
 
@@ -206,6 +212,7 @@ class PdoContentRepository implements ContentRepositoryInterface
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NULL WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute(['id' => $id]);
     }
 
@@ -213,13 +220,14 @@ class PdoContentRepository implements ContentRepositoryInterface
     {
         $sql = "UPDATE {$this->table} SET view_count = view_count + 1 WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
+
         return $stmt->execute(['id' => $id]);
     }
 
     private function mapToEntity(array $data): Content
     {
         $meta = [];
-        if (!empty($data['meta'])) {
+        if (! empty($data['meta'])) {
             $decoded = json_decode($data['meta'], true);
             if (is_array($decoded)) {
                 $meta = $decoded;
@@ -237,11 +245,11 @@ class PdoContentRepository implements ContentRepositoryInterface
             sortOrder: (int) ($data['sort_order'] ?? 0),
             viewCount: (int) ($data['view_count'] ?? 0),
             authorId: $data['author_id'] ?? null,
-            publishedAt: !empty($data['published_at']) ? new DateTimeImmutable($data['published_at']) : null,
+            publishedAt: ! empty($data['published_at']) ? new DateTimeImmutable($data['published_at']) : null,
             id: $data['id'],
-            createdAt: !empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null,
-            updatedAt: !empty($data['updated_at']) ? new DateTimeImmutable($data['updated_at']) : null,
-            deletedAt: !empty($data['deleted_at']) ? new DateTimeImmutable($data['deleted_at']) : null
+            createdAt: ! empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null,
+            updatedAt: ! empty($data['updated_at']) ? new DateTimeImmutable($data['updated_at']) : null,
+            deletedAt: ! empty($data['deleted_at']) ? new DateTimeImmutable($data['deleted_at']) : null
         );
     }
 }

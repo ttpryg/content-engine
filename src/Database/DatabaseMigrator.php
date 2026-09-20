@@ -15,9 +15,9 @@ class DatabaseMigrator
 
     public function migrate(): void
     {
-        $sql = file_get_contents(__DIR__ . '/../../database/schema.sql');
+        $sql = file_get_contents(__DIR__.'/../../database/schema.sql');
         if ($sql === false) {
-            throw new \RuntimeException("Unable to load content-engine schema.sql file.");
+            throw new \RuntimeException('Unable to load content-engine schema.sql file.');
         }
 
         $this->pdo->exec($sql);

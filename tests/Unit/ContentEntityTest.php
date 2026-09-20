@@ -4,13 +4,12 @@ namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\ValueObjects\SeoMeta;
 use Ttpryg\ContentEngine\ValueObjects\TestimonialMeta;
 
 class ContentEntityTest extends TestCase
 {
     // POSITIVE CASE: Entity Getters and Meta Object Wrapping
-    public function testContentCreationAndMetaWrapping(): void
+    public function test_content_creation_and_meta_wrapping(): void
     {
         $testimonialMeta = new TestimonialMeta(
             company: 'Acme Corp',
@@ -41,7 +40,7 @@ class ContentEntityTest extends TestCase
     }
 
     // NEGATIVE CASE: Invalid Status Fallbacks to Draft
-    public function testInvalidStatusDefaultsToDraft(): void
+    public function test_invalid_status_defaults_to_draft(): void
     {
         $content = new Content(
             title: 'Some Page',

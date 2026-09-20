@@ -10,19 +10,33 @@ use Ttpryg\ContentEngine\ValueObjects\ContentStatus;
 class Content implements ContentInterface
 {
     private int|string|null $id;
+
     private string $type;
+
     private string $title;
+
     private ?string $slug;
+
     private ?string $summary;
+
     private ?string $body;
+
     private array $meta;
+
     private string $status;
+
     private int $sortOrder;
+
     private int $viewCount;
+
     private int|string|null $authorId;
+
     private ?DateTimeInterface $publishedAt;
+
     private ?DateTimeInterface $createdAt;
+
     private ?DateTimeInterface $updatedAt;
+
     private ?DateTimeInterface $deletedAt;
 
     public function __construct(
@@ -54,8 +68,8 @@ class Content implements ContentInterface
         $this->viewCount = $viewCount;
         $this->authorId = $authorId;
         $this->publishedAt = $publishedAt;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = $updatedAt ?? new DateTimeImmutable();
+        $this->createdAt = $createdAt ?? new DateTimeImmutable;
+        $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
         $this->deletedAt = $deletedAt;
     }
 
@@ -67,6 +81,7 @@ class Content implements ContentInterface
     public function setId(int|string $id): self
     {
         $this->id = $id;
+
         return $this;
     }
 
@@ -78,6 +93,7 @@ class Content implements ContentInterface
     public function setType(string $type): self
     {
         $this->type = $type;
+
         return $this;
     }
 
@@ -89,6 +105,7 @@ class Content implements ContentInterface
     public function setTitle(string $title): self
     {
         $this->title = $title;
+
         return $this;
     }
 
@@ -100,6 +117,7 @@ class Content implements ContentInterface
     public function setSlug(?string $slug): self
     {
         $this->slug = $slug;
+
         return $this;
     }
 
@@ -111,6 +129,7 @@ class Content implements ContentInterface
     public function setSummary(?string $summary): self
     {
         $this->summary = $summary;
+
         return $this;
     }
 
@@ -122,6 +141,7 @@ class Content implements ContentInterface
     public function setBody(?string $body): self
     {
         $this->body = $body;
+
         return $this;
     }
 
@@ -133,6 +153,7 @@ class Content implements ContentInterface
     public function setMeta(array $meta): self
     {
         $this->meta = $meta;
+
         return $this;
     }
 
@@ -146,6 +167,7 @@ class Content implements ContentInterface
         if (ContentStatus::isValid($status)) {
             $this->status = $status;
         }
+
         return $this;
     }
 
@@ -157,6 +179,7 @@ class Content implements ContentInterface
     public function setSortOrder(int $sortOrder): self
     {
         $this->sortOrder = $sortOrder;
+
         return $this;
     }
 
@@ -168,6 +191,7 @@ class Content implements ContentInterface
     public function setViewCount(int $viewCount): self
     {
         $this->viewCount = $viewCount;
+
         return $this;
     }
 
@@ -179,6 +203,7 @@ class Content implements ContentInterface
     public function setAuthorId(int|string|null $authorId): self
     {
         $this->authorId = $authorId;
+
         return $this;
     }
 
@@ -190,6 +215,7 @@ class Content implements ContentInterface
     public function setPublishedAt(?DateTimeInterface $publishedAt): self
     {
         $this->publishedAt = $publishedAt;
+
         return $this;
     }
 
@@ -206,6 +232,7 @@ class Content implements ContentInterface
     public function setUpdatedAt(DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+
         return $this;
     }
 
@@ -217,6 +244,7 @@ class Content implements ContentInterface
     public function setDeletedAt(?DateTimeInterface $deletedAt): self
     {
         $this->deletedAt = $deletedAt;
+
         return $this;
     }
 

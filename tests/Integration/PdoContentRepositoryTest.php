@@ -10,6 +10,7 @@ use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
 class PdoContentRepositoryTest extends TestCase
 {
     private PDO $pdo;
+
     private PdoContentRepository $repository;
 
     protected function setUp(): void
@@ -42,7 +43,7 @@ class PdoContentRepositoryTest extends TestCase
     }
 
     // POSITIVE CASE: Save and Find
-    public function testSaveAndFindContent(): void
+    public function test_save_and_find_content(): void
     {
         $content = new Content(
             title: 'Welcome to CMS',
@@ -64,7 +65,7 @@ class PdoContentRepositoryTest extends TestCase
     }
 
     // POSITIVE CASE: Query All with Filter & Increments
-    public function testFindAllAndIncrementViews(): void
+    public function test_find_all_and_increment_views(): void
     {
         $c1 = new Content('Post 1', type: 'post', status: 'published');
         $c2 = new Content('Post 2', type: 'post', status: 'draft');
@@ -85,7 +86,7 @@ class PdoContentRepositoryTest extends TestCase
     }
 
     // NEGATIVE/SOFT DELETE CASE
-    public function testSoftDeleteContent(): void
+    public function test_soft_delete_content(): void
     {
         $content = new Content('ToDelete', type: 'post');
         $saved = $this->repository->save($content);

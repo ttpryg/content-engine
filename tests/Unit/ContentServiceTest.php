@@ -16,7 +16,7 @@ use Ttpryg\ContentEngine\Services\ContentService;
 class ContentServiceTest extends TestCase
 {
     // POSITIVE CASE: Create Content
-    public function testSuccessfulContentCreation(): void
+    public function test_successful_content_creation(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
         $slugGen = $this->createMock(SlugGeneratorInterface::class);
@@ -29,6 +29,7 @@ class ContentServiceTest extends TestCase
             ->method('save')
             ->willReturnCallback(function (Content $c) {
                 $c->setId(1);
+
                 return $c;
             });
 
@@ -45,7 +46,7 @@ class ContentServiceTest extends TestCase
     }
 
     // NEGATIVE CASE: Invalid Status Throws Exception
-    public function testCreateContentFailsOnInvalidStatus(): void
+    public function test_create_content_fails_on_invalid_status(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
 
@@ -56,7 +57,7 @@ class ContentServiceTest extends TestCase
     }
 
     // POSITIVE CASE: Publish Content
-    public function testPublishContent(): void
+    public function test_publish_content(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
@@ -78,7 +79,7 @@ class ContentServiceTest extends TestCase
     }
 
     // NEGATIVE CASE: Publish Non-Existent Content
-    public function testPublishFailsOnNonExistentContent(): void
+    public function test_publish_fails_on_non_existent_content(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
         $repo->method('findById')->with(999)->willReturn(null);
