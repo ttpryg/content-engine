@@ -1,3 +1,4 @@
+name: content-engine
 services:
   app:
     build:
