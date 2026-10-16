@@ -5,7 +5,9 @@ namespace Ttpryg\ContentEngine\Tests\Integration;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Entities\Content;
+use Ttpryg\ContentEngine\Exceptions\InvalidOrderByException;
 use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
+use Ttpryg\ContentEngine\Services\ContentService;
 
 class PdoContentRepositoryTest extends TestCase
 {
@@ -37,7 +39,8 @@ class PdoContentRepositoryTest extends TestCase
                 published_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                deleted_at DATETIME NULL DEFAULT NULL
+                deleted_at DATETIME NULL DEFAULT NULL,
+                UNIQUE (tenant_type, tenant_id, type, slug)
             )
         ");
 
@@ -116,5 +119,77 @@ class PdoContentRepositoryTest extends TestCase
 
         $this->assertNull($this->pdoContentRepository->findById($id, includeTrashed: false));
         $this->assertNotNull($this->pdoContentRepository->findById($id, includeTrashed: true));
+    }
+
+    // SECURITY CASE: ORDER BY whitelist menolak kolom di luar whitelist
+    public function test_find_all_throws_on_non_whitelisted_order_by_column(): void
+    {
+        $this->expectException(InvalidOrderByException::class);
+
+        $this->pdoContentRepository->findAll(
+            criteria: [],
+            limit: 20,
+            offset: 0,
+            orderBy: ['id; DROP TABLE contents; --' => 'ASC']
+        );
+    }
+
+    // SECURITY CASE: ORDER BY whitelist mengizinkan kolom yang terdaftar
+    public function test_find_all_accepts_whitelisted_order_by_column(): void
+    {
+        $this->pdoContentRepository->save(new Content('B Title', type: 'post'));
+        $this->pdoContentRepository->save(new Content('A Title', type: 'post'));
+
+        $results = $this->pdoContentRepository->findAll(
+            criteria: ['type' => 'post'],
+            orderBy: ['title' => 'ASC']
+        );
+
+        $this->assertCount(2, $results);
+        $this->assertEquals('A Title', $results[0]->getTitle());
+    }
+
+    // SECURITY CASE: Limit pagination di-clamp ke batas atas maksimum (DoS prevention)
+    public function test_find_all_clamps_limit_to_maximum(): void
+    {
+        for ($i = 1; $i <= 105; $i++) {
+            $this->pdoContentRepository->save(new Content("Post {$i}", type: 'post'));
+        }
+
+        $results = $this->pdoContentRepository->findAll(criteria: ['type' => 'post'], limit: 100000);
+
+        $this->assertCount(100, $results);
+    }
+
+    // SECURITY CASE: Limit pagination di-clamp ke minimal 1
+    public function test_find_all_clamps_limit_to_minimum_one(): void
+    {
+        $this->pdoContentRepository->save(new Content('Post 1', type: 'post'));
+        $this->pdoContentRepository->save(new Content('Post 2', type: 'post'));
+
+        $results = $this->pdoContentRepository->findAll(criteria: ['type' => 'post'], limit: 0);
+
+        $this->assertCount(1, $results);
+    }
+
+    // INTEGRITY CASE: Slug item soft-deleted tidak dipakai ulang, dan restore() aman dari tabrakan unique key
+    public function test_slug_collision_with_soft_deleted_content_is_prevented(): void
+    {
+        $contentService = new ContentService($this->pdoContentRepository);
+
+        $original = $contentService->createContent('My Unique Post', type: 'post');
+        $this->assertEquals('my-unique-post', $original->getSlug());
+
+        // Soft delete konten asli; slug 'my-unique-post' masih terpakai di tabel (deleted_at terisi).
+        $contentService->delete($original->getId());
+
+        // Konten baru dengan judul sama harus mendapat slug baru, bukan menabrak slug item trashed.
+        $recreated = $contentService->createContent('My Unique Post', type: 'post');
+        $this->assertEquals('my-unique-post-1', $recreated->getSlug());
+
+        // Restore konten asli: keduanya hidup berdampingan tanpa melanggar UNIQUE (tenant_type, tenant_id, type, slug).
+        $this->assertTrue($this->pdoContentRepository->restore($original->getId()));
+        $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post', 'post'));
+        $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post-1', 'post'));
     }
 }

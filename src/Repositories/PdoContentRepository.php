@@ -6,9 +6,22 @@ use DateTimeImmutable;
 use PDO;
 use Ttpryg\ContentEngine\Contracts\ContentRepositoryInterface;
 use Ttpryg\ContentEngine\Entities\Content;
+use Ttpryg\ContentEngine\Exceptions\InvalidOrderByException;
 
 class PdoContentRepository implements ContentRepositoryInterface
 {
+    /**
+     * Kolom yang diizinkan untuk parameter ORDER BY (whitelist anti SQL injection).
+     *
+     * @var array<int, string>
+     */
+    private const ALLOWED_ORDER_BY_COLUMNS = ['id', 'title', 'created_at', 'published_at', 'sort_order', 'view_count'];
+
+    /**
+     * Batas maksimum limit pagination untuk mencegah DoS akibat query terlalu berat.
+     */
+    private const MAX_LIMIT = 100;
+
     public function __construct(private readonly PDO $pdo, private readonly string $table = 'contents') {}
 
     public function findById(int|string $id, bool $includeTrashed = false): ?Content
@@ -78,6 +91,10 @@ class PdoContentRepository implements ContentRepositoryInterface
 
     public function findAll(array $criteria = [], int $limit = 20, int $offset = 0, array $orderBy = ['created_at' => 'DESC']): array
     {
+        // DoS prevention: batasi limit ke rentang 1..MAX_LIMIT dan pastikan offset tidak negatif.
+        $limit = min(max(1, $limit), self::MAX_LIMIT);
+        $offset = max(0, $offset);
+
         $where = ['deleted_at IS NULL'];
         $params = [];
 
@@ -123,10 +140,14 @@ class PdoContentRepository implements ContentRepositoryInterface
 
         $orderSqls = [];
         foreach ($orderBy as $field => $dir) {
+            // Whitelist validation: hanya kolom terdaftar yang boleh masuk ke ORDER BY.
+            if (! in_array($field, self::ALLOWED_ORDER_BY_COLUMNS, true)) {
+                throw InvalidOrderByException::column((string) $field, self::ALLOWED_ORDER_BY_COLUMNS);
+            }
             $direction = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
             $orderSqls[] = "{$field} {$direction}";
         }
-        $orderSql = implode(', ', $orderSqls);
+        $orderSql = implode(', ', $orderSqls) ?: 'created_at DESC';
 
         $sql = "SELECT * FROM {$this->table} WHERE {$whereSql} ORDER BY {$orderSql} LIMIT :limit OFFSET :offset";
 

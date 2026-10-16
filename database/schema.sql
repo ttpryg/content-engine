@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS contents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uk_tenant_slug (tenant_type, tenant_id, type, slug),
     INDEX idx_tenant_content (tenant_type, tenant_id, type, status),
     INDEX idx_author_content (author_id, status),
     INDEX idx_type_status_published (type, status, published_at),

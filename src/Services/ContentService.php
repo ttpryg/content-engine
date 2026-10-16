@@ -144,7 +144,9 @@ class ContentService
         $slug = $baseSlug;
         $counter = 1;
 
-        while ($this->contentRepository->findBySlug($slug, $type, includeTrashed: false, tenantType: $tenantType, tenantId: $tenantId) instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        // Sengaja includeTrashed: true agar slug milik item soft-deleted tidak dipakai ulang,
+        // mencegah tabrakan unique key saat item tersebut di-restore().
+        while ($this->contentRepository->findBySlug($slug, $type, includeTrashed: true, tenantType: $tenantType, tenantId: $tenantId) instanceof \Ttpryg\ContentEngine\Entities\Content) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }

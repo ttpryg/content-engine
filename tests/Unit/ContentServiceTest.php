@@ -89,4 +89,35 @@ class ContentServiceTest extends TestCase
         $contentService = new ContentService($repo);
         $contentService->publish(999);
     }
+
+    // INTEGRITY CASE: Slug generation mempertimbangkan item soft-deleted agar aman saat restore()
+    public function test_slug_generation_avoids_trashed_slug_collision(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $slugGen = $this->createMock(SlugGeneratorInterface::class);
+
+        $slugGen->method('generate')->with('My First Post')->willReturn('my-first-post');
+
+        $repo->expects($this->exactly(2))
+            ->method('findBySlug')
+            ->willReturnCallback(function (string $slug, string $type = 'post', bool $includeTrashed = false, ?string $tenantType = null, int|string|null $tenantId = null): ?Content {
+                // Slug unik harus mengecek termasuk item trashed (includeTrashed = true).
+                $this->assertTrue($includeTrashed, 'findBySlug must include trashed items when generating a unique slug.');
+
+                return $slug === 'my-first-post'
+                    ? new Content('My First Post', type: $type, slug: $slug, deletedAt: new \DateTimeImmutable)
+                    : null;
+            });
+
+        $repo->method('save')->willReturnCallback(function (Content $content): Content {
+            $content->setId(2);
+
+            return $content;
+        });
+
+        $contentService = new ContentService($repo, $slugGen);
+        $content = $contentService->createContent('My First Post', type: 'post');
+
+        $this->assertEquals('my-first-post-1', $content->getSlug());
+    }
 }
