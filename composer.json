@@ -38,13 +38,15 @@
         "sort-packages": true
     },
     "scripts": {
+        "analyse": "vendor/bin/phpstan analyse --level=5 src tests",
         "fix": [
             "vendor/bin/rector process",
             "vendor/bin/pint"
         ],
         "fix:check": [
             "vendor/bin/rector process --dry-run",
-            "vendor/bin/pint --test"],
+            "vendor/bin/pint --test",
+            "vendor/bin/phpstan analyse --level=5 src tests"],
         "test": "vendor/bin/phpunit"
     }
 }

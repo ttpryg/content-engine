@@ -11,9 +11,9 @@ class Content implements ContentInterface
 {
     private string $status;
 
-    private readonly ?DateTimeInterface $createdAt;
+    private readonly DateTimeInterface $createdAt;
 
-    private ?DateTimeInterface $updatedAt;
+    private DateTimeInterface $updatedAt;
 
     public function __construct(
         private string $title,
@@ -255,8 +255,8 @@ class Content implements ContentInterface
             'sort_order' => $this->sortOrder,
             'view_count' => $this->viewCount,
             'published_at' => $this->publishedAt?->format(DateTimeInterface::ATOM),
-            'created_at' => $this->createdAt?->format(DateTimeInterface::ATOM),
-            'updated_at' => $this->updatedAt?->format(DateTimeInterface::ATOM),
+            'created_at' => $this->createdAt->format(DateTimeInterface::ATOM),
+            'updated_at' => $this->updatedAt->format(DateTimeInterface::ATOM),
             'deleted_at' => $this->deletedAt?->format(DateTimeInterface::ATOM),
         ];
     }

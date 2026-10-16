@@ -23,7 +23,7 @@ class ContentServiceTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
 
         $slugGen->method('generate')->with('My First Post')->willReturn('my-first-post');
-        $repo->method('findBySlug')->willReturn(value: null);
+        $repo->method('findBySlug')->willReturn(null);
 
         $repo->expects($this->once())
             ->method('save')
@@ -64,7 +64,7 @@ class ContentServiceTest extends TestCase
 
         $content = new Content('Draft Post', status: 'draft', id: 5);
         $repo->method('findById')->with(5)->willReturn($content);
-        $repo->method('update')->willReturn(value: true);
+        $repo->method('update')->willReturn(true);
 
         $dispatcher->expects($this->once())
             ->method('dispatch')
@@ -82,7 +82,7 @@ class ContentServiceTest extends TestCase
     public function test_publish_fails_on_non_existent_content(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
-        $repo->method('findById')->with(999)->willReturn(value: null);
+        $repo->method('findById')->with(999)->willReturn(null);
 
         $this->expectException(ContentNotFoundException::class);
 

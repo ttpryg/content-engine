@@ -7,7 +7,7 @@ use DateTimeInterface;
 
 class Category
 {
-    private readonly ?DateTimeInterface $createdAt;
+    private readonly DateTimeInterface $createdAt;
 
     public function __construct(
         private string $name,
@@ -79,7 +79,7 @@ class Category
             'name' => $this->name,
             'slug' => $this->slug,
             'type' => $this->type,
-            'created_at' => $this->createdAt?->format(DateTimeInterface::ATOM),
+            'created_at' => $this->createdAt->format(DateTimeInterface::ATOM),
         ];
     }
 }
