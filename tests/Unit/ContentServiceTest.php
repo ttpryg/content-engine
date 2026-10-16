@@ -9,6 +9,7 @@ use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Entities\Content;
 use Ttpryg\ContentEngine\Events\ContentCreatedEvent;
 use Ttpryg\ContentEngine\Events\ContentPublishedEvent;
+use Ttpryg\ContentEngine\Events\ContentViewedEvent;
 use Ttpryg\ContentEngine\Exceptions\ContentNotFoundException;
 use Ttpryg\ContentEngine\Exceptions\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Services\ContentService;
@@ -119,5 +120,63 @@ class ContentServiceTest extends TestCase
         $content = $contentService->createContent('My First Post', type: 'post');
 
         $this->assertEquals('my-first-post-1', $content->getSlug());
+    }
+
+    // SCALABILITY CASE: Mode default — pembacaan menaikkan view_count dan memicu ContentViewedEvent
+    public function test_get_content_by_slug_increments_views_and_dispatches_viewed_event(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', id: 10);
+
+        $repo->method('findBySlug')->willReturn($content);
+        $repo->expects($this->once())
+            ->method('incrementViews')
+            ->with(10)
+            ->willReturn(true);
+
+        $dispatcher->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(ContentViewedEvent::class));
+
+        $contentService = new ContentService($repo, eventDispatcher: $dispatcher);
+        $result = $contentService->getContentBySlug('viewed-post');
+
+        $this->assertEquals('Viewed Post', $result->getTitle());
+    }
+
+    // SCALABILITY CASE: deferViewCounts=true — lewati UPDATE view_count (hindari row-lock contention)
+    public function test_get_content_by_slug_with_defer_view_counts_skips_database_increment(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', id: 10);
+
+        $repo->method('findBySlug')->willReturn($content);
+        // Inti test: TIDAK ada UPDATE view_count ke database pada mode defer.
+        $repo->expects($this->never())->method('incrementViews');
+
+        // Event tetap dikirim agar konsumen async (Redis / _modules/queue) bisa buffering.
+        $dispatcher->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(ContentViewedEvent::class));
+
+        $contentService = new ContentService($repo, eventDispatcher: $dispatcher, deferViewCounts: true);
+        $result = $contentService->getContentBySlug('viewed-post');
+
+        $this->assertEquals(10, $result->getId());
+    }
+
+    // NEGATIVE CASE: getContentBySlug pada konten tidak ada → ContentNotFoundException, tanpa increment
+    public function test_get_content_by_slug_fails_on_missing_content(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $repo->method('findBySlug')->willReturn(null);
+        $repo->expects($this->never())->method('incrementViews');
+
+        $this->expectException(ContentNotFoundException::class);
+
+        $contentService = new ContentService($repo);
+        $contentService->getContentBySlug('missing-post');
     }
 }

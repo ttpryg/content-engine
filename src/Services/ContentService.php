@@ -11,6 +11,7 @@ use Ttpryg\ContentEngine\Events\ContentArchivedEvent;
 use Ttpryg\ContentEngine\Events\ContentCreatedEvent;
 use Ttpryg\ContentEngine\Events\ContentDeletedEvent;
 use Ttpryg\ContentEngine\Events\ContentPublishedEvent;
+use Ttpryg\ContentEngine\Events\ContentViewedEvent;
 use Ttpryg\ContentEngine\Exceptions\ContentNotFoundException;
 use Ttpryg\ContentEngine\Exceptions\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
@@ -21,7 +22,14 @@ class ContentService
     public function __construct(
         private readonly ContentRepositoryInterface $contentRepository,
         private ?SlugGeneratorInterface $slugGenerator = null,
-        private readonly ?EventDispatcherInterface $eventDispatcher = null
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+        /**
+         * Jika true, pembacaan konten TIDAK melakukan UPDATE view_count langsung
+         * ke database (menghindari row-lock contention pada traffic tinggi).
+         * Hitungan view dialirkan lewat ContentViewedEvent agar bisa di-buffer
+         * / di-flush asinkron (mis. ke Redis atau _modules/queue).
+         */
+        private readonly bool $deferViewCounts = false
     ) {
         $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator;
     }
@@ -133,7 +141,14 @@ class ContentService
             throw ContentNotFoundException::bySlug($slug, $type);
         }
 
-        $this->contentRepository->incrementViews($content->getId());
+        $this->eventDispatcher?->dispatch(new ContentViewedEvent($content));
+
+        // Mode deferViewCounts: lewati UPDATE view_count per bacaan untuk menghindari
+        // row-lock contention. Konsumen event (Redis / _modules/queue) yang menanggung
+        // buffering & flush asinkron.
+        if (! $this->deferViewCounts) {
+            $this->contentRepository->incrementViews($content->getId());
+        }
 
         return $content;
     }
