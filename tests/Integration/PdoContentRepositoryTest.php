@@ -192,4 +192,51 @@ class PdoContentRepositoryTest extends TestCase
         $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post', 'post'));
         $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post-1', 'post'));
     }
+
+    // INTEGRITY CASE: Soft-deleted content tersembunyi dari semua query baca, kembali setelah restore()
+    public function test_soft_delete_hides_content_from_queries_until_restored(): void
+    {
+        $kept = $this->pdoContentRepository->save(new Content('Kept Post', type: 'post', slug: 'kept-post'));
+        $trashed = $this->pdoContentRepository->save(new Content('Trashed Post', type: 'post', slug: 'trashed-post'));
+
+        // Soft delete satu konten
+        $this->pdoContentRepository->delete($trashed->getId(), softDelete: true);
+
+        // Semua query baca harus mengabaikan konten ter-soft-delete
+        $this->assertCount(1, $this->pdoContentRepository->findAll(criteria: ['type' => 'post']));
+        $this->assertEquals(1, $this->pdoContentRepository->count(['type' => 'post']));
+        $this->assertNull($this->pdoContentRepository->findBySlug('trashed-post', 'post'));
+        $this->assertNull($this->pdoContentRepository->findById($trashed->getId()));
+        $this->assertEquals(
+            ['kept-post'],
+            array_map(fn ($c) => $c->getSlug(), $this->pdoContentRepository->findAll(criteria: ['type' => 'post']))
+        );
+
+        // Konten yang tersisa tetap terbaca normal
+        $this->assertNotNull($this->pdoContentRepository->findById($kept->getId()));
+
+        // Restore mengembalikan konten ke semua query baca
+        $this->assertTrue($this->pdoContentRepository->restore($trashed->getId()));
+
+        $this->assertCount(2, $this->pdoContentRepository->findAll(criteria: ['type' => 'post']));
+        $this->assertEquals(2, $this->pdoContentRepository->count(['type' => 'post']));
+        $this->assertNotNull($this->pdoContentRepository->findBySlug('trashed-post', 'post'));
+        $this->assertNotNull($this->pdoContentRepository->findById($trashed->getId()));
+    }
+
+    // EDGE CASE: Hard delete (softDelete=false) menghapus baris permanen, restore tidak berpengaruh
+    public function test_hard_deleted_content_cannot_be_restored(): void
+    {
+        $content = $this->pdoContentRepository->save(new Content('Hard Deleted', type: 'post', slug: 'hard-deleted'));
+        $id = $content->getId();
+
+        $this->pdoContentRepository->delete($id, softDelete: false);
+
+        $this->assertNull($this->pdoContentRepository->findById($id, includeTrashed: true));
+
+        // restore() pada baris yang sudah tidak ada: UPDATE tidak mengenai baris apa pun.
+        // Pdo tidak error, tapi konten tetap tidak ditemukan.
+        $this->pdoContentRepository->restore($id);
+        $this->assertNull($this->pdoContentRepository->findById($id, includeTrashed: true));
+    }
 }
