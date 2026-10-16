@@ -74,12 +74,21 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
 
     public function attachToContent(int|string $contentId, int|string $categoryId): bool
     {
-        $sql = "INSERT IGNORE INTO {$this->pivotTable} (content_id, category_id) VALUES (:content_id, :category_id)";
+        // Portabel antar driver (MySQL & SQLite): skip jika pasangan sudah ada.
+        // Menggantikan INSERT IGNORE yang hanya didukung MySQL.
+        $sql = "INSERT INTO {$this->pivotTable} (content_id, category_id)
+                SELECT :new_content_id, :new_category_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM {$this->pivotTable}
+                    WHERE content_id = :existing_content_id AND category_id = :existing_category_id
+                )";
         $stmt = $this->pdo->prepare($sql);
 
         return $stmt->execute([
-            'content_id' => $contentId,
-            'category_id' => $categoryId,
+            'new_content_id' => $contentId,
+            'new_category_id' => $categoryId,
+            'existing_content_id' => $contentId,
+            'existing_category_id' => $categoryId,
         ]);
     }
 
