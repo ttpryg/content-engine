@@ -16,14 +16,17 @@
 - **Strongly Typed Meta Wrappers**:
   - `TestimonialMeta`: Company, Position, Rating, Avatar URL.
   - `SeoMeta`: Meta Title, Meta Description, OG Image, Keywords.
-- **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`).
-- **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`.
+- **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision.
+- **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`.
+- **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), and parameterized PDO queries throughout.
+- **Versioned Schema Migrations**: `MigrationRunner` with a `content_engine_migrations` tracker table — incremental SQL migrations run once, are recorded only after success, and resume safely after failures.
+- **Scalability Options**: `deferViewCounts: true` skips the per-read `UPDATE view_count` (avoids row-lock contention under heavy traffic); `ContentViewedEvent` provides the hook for async buffering (Redis / queue).
 
 ---
 
 ## 🗄️ Database Schema
 
-Run the SQL script from `database/schema.sql` or use `DatabaseMigrator`:
+Run the SQL script from `database/schema.sql` (fresh install) or use `DatabaseMigrator` (see [Database Migrations](#-database-migrations)). The script also creates the `categories` and `content_category` (pivot) tables:
 
 ```sql
 CREATE TABLE IF NOT EXISTS contents (
@@ -44,12 +47,16 @@ CREATE TABLE IF NOT EXISTS contents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uk_tenant_slug (tenant_type, tenant_id, type, slug),
     INDEX idx_tenant_content (tenant_type, tenant_id, type, status),
     INDEX idx_author_content (author_id, status),
     INDEX idx_type_status_published (type, status, published_at),
-    INDEX idx_slug_type (slug, type)
-);
+    INDEX idx_slug_type (slug, type),
+    INDEX idx_sort (type, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
+> The `UNIQUE KEY uk_tenant_slug` prevents slug collisions across tenants per content type, and doubles as the composite index for `(tenant_type, tenant_id, type, slug)` lookups.
 
 ---
 
@@ -59,7 +66,6 @@ CREATE TABLE IF NOT EXISTS contents (
 use PDO;
 use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
 use Ttpryg\ContentEngine\Services\ContentService;
-use Ttpryg\ContentEngine\ValueObjects\TestimonialMeta;
 
 // 1. Initialize PDO & Services
 $pdo = new PDO("mysql:host=localhost;dbname=my_db", "root", "secret");
@@ -87,6 +93,59 @@ $storePost = $contentService->createContent(
 
 // 4. Query Posts for Store 101
 $storePosts = $contentRepo->findByTenant(tenantType: 'store', tenantId: '101', type: 'post');
+```
+
+---
+
+## 🔄 Database Migrations
+
+**Fresh install** — bootstraps the full schema from `database/schema.sql` and records every bundled migration as a baseline (so they are never re-executed):
+
+```php
+use Ttpryg\ContentEngine\Database\DatabaseMigrator;
+
+(new DatabaseMigrator($pdo))->migrate();
+```
+
+**Existing database** (e.g. created before a newer schema change) — run pending migrations from `database/migrations/*.sql`. Each file executes once in name order, is recorded in the `content_engine_migrations` tracker table **only after success**, and is automatically retried on the next run if it fails:
+
+```php
+use Ttpryg\ContentEngine\Database\MigrationRunner;
+
+$runner = new MigrationRunner($pdo);
+$runner->migrate();            // e.g. ['001_add_unique_tenant_slug']
+$runner->appliedMigrations();  // full applied history
+```
+
+> Migration `001_add_unique_tenant_slug` upgrades databases created before the multi-tenant slug unique key existed. Fresh installs skip it automatically (baseline).
+
+---
+
+## ⚡ High-Traffic View Counting
+
+By default, every read via `getContentBySlug()` runs `UPDATE contents SET view_count = view_count + 1`, taking a row lock per read. Under heavy traffic, enable deferred counting:
+
+```php
+use Ttpryg\ContentEngine\Services\ContentService;
+
+$contentService = new ContentService(
+    contentRepository: $contentRepo,
+    eventDispatcher: $dispatcher,
+    deferViewCounts: true   // no UPDATE on read
+);
+```
+
+`ContentViewedEvent` is still dispatched on every read — subscribe a listener that buffers counts (e.g. in Redis or `_modules/queue`) and flushes them in batches. The default (`deferViewCounts: false`) preserves the original behaviour.
+
+---
+
+## 🛠️ Development
+
+```bash
+composer test      # PHPUnit (unit + integration, in-memory SQLite)
+composer analyse   # PHPStan level 5 (src + tests)
+composer fix       # Rector + Pint (auto-fix)
+composer fix:check # Rector dry-run + Pint test + PHPStan (CI gate)
 ```
 
 ---
