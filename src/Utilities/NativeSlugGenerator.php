@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ttpryg\ContentEngine\Utilities;
 
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
