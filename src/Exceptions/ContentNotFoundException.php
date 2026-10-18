@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ttpryg\ContentEngine\Exceptions;
 
 class ContentNotFoundException extends ContentEngineException
