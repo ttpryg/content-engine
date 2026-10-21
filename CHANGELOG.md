@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - In-memory repository implementations (`InMemoryContentRepository`,
   `InMemoryCategoryRepository`) for fast, database-free fakes in tests and prototypes.
+- PHPStan level 8 configuration (`phpstan.neon`) covering `src`, `infrastructure`,
+  `database/migrations`, and `tests`, with `phpstan/phpstan` declared explicitly in
+  `require-dev`.
+- Unit coverage for value objects, enums, DTOs, and domain events; tests are now
+  organised by domain, application, and infrastructure layers.
 
 ### Changed
 
@@ -27,8 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SlugGeneratorInterface` in the constructor instead of creating a
   `NativeSlugGenerator` implicitly. Inject `NativeSlugGenerator` or a custom
   implementation from the composition root.
-- **Breaking:** `SeoMeta` and `TestimonialMeta` are now `final` value objects with
-  `readonly` properties; they can no longer be extended or mutated.
+- **Breaking:** `SeoMeta`, `TestimonialMeta`, and all domain event classes are now
+  `final` with `readonly` properties, and `NativeSlugGenerator` is `final`; they can
+  no longer be extended or mutated.
 - **Breaking:** `ContentType` is now a string-backed enum instead of a class of
   string constants. Use `ContentType::PAGE->value` where a raw string is still
   required.
@@ -113,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ContentDeletedEvent`.
 - PDO repositories and a native slug generator.
 
-[Unreleased]: https://github.com/ttpryg/content-engine/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/ttpryg/content-engine/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/ttpryg/content-engine/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/ttpryg/content-engine/compare/1.1.2...1.2.0
 [1.1.2]: https://github.com/ttpryg/content-engine/compare/1.1.1...1.1.2
 [1.1.1]: https://github.com/ttpryg/content-engine/compare/1.1.0...1.1.1

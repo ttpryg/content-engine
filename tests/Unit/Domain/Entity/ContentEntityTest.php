@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Tests\Unit;
+namespace Ttpryg\ContentEngine\Tests\Unit\Domain\Entity;
 
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Domain\Entity\Content;

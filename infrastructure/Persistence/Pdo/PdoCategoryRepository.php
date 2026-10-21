@@ -35,6 +35,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         return $data ? $this->mapToEntity($data) : null;
     }
 
+    /** @return list<Category> */
     public function findAll(string $type = 'category'): array
     {
         $sql = "SELECT * FROM {$this->table} WHERE type = :type ORDER BY name ASC";
@@ -61,6 +62,9 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         ]);
 
         $id = $this->pdo->lastInsertId();
+        if ($id === false) {
+            throw new \RuntimeException('Failed to retrieve the inserted category ID.');
+        }
         $category->setId($id);
 
         return $category;
@@ -105,6 +109,7 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         ]);
     }
 
+    /** @return list<Category> */
     public function getCategoriesByContent(int|string $contentId): array
     {
         $sql = "SELECT c.* FROM {$this->table} c
@@ -123,14 +128,17 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
         return $results;
     }
 
+    /** @param array<string, mixed> $data */
     private function mapToEntity(array $data): Category
     {
+        $createdAt = $data['created_at'] ?? null;
+
         return new Category(
-            name: $data['name'],
-            slug: $data['slug'],
-            type: $data['type'] ?? 'category',
-            id: $data['id'],
-            createdAt: ! empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null
+            name: (string) $data['name'],
+            slug: (string) $data['slug'],
+            type: (string) ($data['type'] ?? 'category'),
+            id: is_int($data['id'] ?? null) || is_string($data['id'] ?? null) ? $data['id'] : null,
+            createdAt: is_string($createdAt) && $createdAt !== '' ? new DateTimeImmutable($createdAt) : null
         );
     }
 }

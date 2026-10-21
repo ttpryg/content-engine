@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Tests\Unit;
+namespace Ttpryg\ContentEngine\Tests\Integration\Infrastructure\Database;
 
 use PDO;
 use PHPUnit\Framework\TestCase;

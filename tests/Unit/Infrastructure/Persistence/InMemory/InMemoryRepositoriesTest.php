@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Tests\Unit;
+namespace Ttpryg\ContentEngine\Tests\Unit\Infrastructure\Persistence\InMemory;
 
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
@@ -68,7 +68,7 @@ class InMemoryRepositoriesTest extends TestCase
     {
         $repository = new InMemoryContentRepository;
         $content = $repository->save(new Content('Post', type: 'post', slug: 'post'));
-        $id = $content->getId();
+        $id = $this->idOf($content);
 
         $this->assertTrue($repository->delete($id));
         $this->assertNull($repository->findById($id));
@@ -96,7 +96,7 @@ class InMemoryRepositoriesTest extends TestCase
         $content->setTitle('Updated');
 
         $this->assertTrue($repository->update($content));
-        $this->assertSame('Updated', $repository->findById($content->getId())?->getTitle());
+        $this->assertSame('Updated', $repository->findById($this->idOf($content))?->getTitle());
     }
 
     public function test_category_repository_saves_finds_and_filters_by_type(): void
@@ -107,7 +107,7 @@ class InMemoryRepositoriesTest extends TestCase
         $news = $repository->save(new Category('News', 'news'));
         $repository->save(new Category('Beta', 'beta', type: 'tag'));
 
-        $this->assertSame(1, $technology->getId());
+        $this->assertSame(1, $this->idOf($technology));
         $this->assertSame($technology, $repository->findById(1));
         $this->assertSame($news, $repository->findBySlug('news'));
         $this->assertNull($repository->findById(999));
@@ -126,20 +126,30 @@ class InMemoryRepositoriesTest extends TestCase
         $technology = $repository->save(new Category('Technology', 'technology'));
         $news = $repository->save(new Category('News', 'news'));
 
-        $this->assertTrue($repository->attachToContent(10, $technology->getId()));
-        $this->assertTrue($repository->attachToContent(10, $technology->getId()));
-        $this->assertTrue($repository->attachToContent(10, $news->getId()));
+        $this->assertTrue($repository->attachToContent(10, $this->idOf($technology)));
+        $this->assertTrue($repository->attachToContent(10, $this->idOf($technology)));
+        $this->assertTrue($repository->attachToContent(10, $this->idOf($news)));
 
         $this->assertSame(
             ['News', 'Technology'],
             array_map(static fn (Category $category): string => $category->getName(), $repository->getCategoriesByContent(10))
         );
 
-        $this->assertTrue($repository->detachFromContent(10, $technology->getId()));
+        $this->assertTrue($repository->detachFromContent(10, $this->idOf($technology)));
         $this->assertCount(1, $repository->getCategoriesByContent(10));
         $this->assertSame([], $repository->getCategoriesByContent(999));
 
-        $this->assertTrue($repository->delete($news->getId()));
+        $this->assertTrue($repository->delete($this->idOf($news)));
         $this->assertSame([], $repository->getCategoriesByContent(10));
+    }
+
+    private function idOf(Content|Category $entity): int|string
+    {
+        $id = $entity->getId();
+        if ($id === null) {
+            throw new \RuntimeException('Expected a persisted entity ID.');
+        }
+
+        return $id;
     }
 }

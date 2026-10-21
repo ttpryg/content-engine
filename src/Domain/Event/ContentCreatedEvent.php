@@ -6,7 +6,7 @@ namespace Ttpryg\ContentEngine\Domain\Event;
 
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 
-class ContentCreatedEvent
+final class ContentCreatedEvent
 {
     public function __construct(
         public readonly Content $content

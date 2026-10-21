@@ -1,6 +1,8 @@
 <?php
 
-namespace Ttpryg\ContentEngine\Tests\Integration;
+declare(strict_types=1);
+
+namespace Ttpryg\ContentEngine\Tests\Integration\Infrastructure\Persistence\Pdo;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -45,9 +47,7 @@ class PdoCategoryRepositoryTest extends TestCase
         $category = new Category(name: 'Technology', slug: 'technology');
 
         $saved = $this->pdoCategoryRepository->save($category);
-        $this->assertNotNull($saved->getId());
-
-        $found = $this->pdoCategoryRepository->findById($saved->getId());
+        $found = $this->pdoCategoryRepository->findById($this->idOf($saved));
         $this->assertNotNull($found);
         $this->assertEquals('Technology', $found->getName());
         $this->assertEquals('technology', $found->getSlug());
@@ -95,8 +95,8 @@ class PdoCategoryRepositoryTest extends TestCase
         $tech = $this->pdoCategoryRepository->save(new Category(name: 'Technology', slug: 'technology'));
         $news = $this->pdoCategoryRepository->save(new Category(name: 'News', slug: 'news'));
 
-        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $tech->getId()));
-        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $news->getId()));
+        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $this->idOf($tech)));
+        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $this->idOf($news)));
 
         $categories = $this->pdoCategoryRepository->getCategoriesByContent(1);
         $this->assertCount(2, $categories);
@@ -110,8 +110,8 @@ class PdoCategoryRepositoryTest extends TestCase
     {
         $tech = $this->pdoCategoryRepository->save(new Category(name: 'Technology', slug: 'technology'));
 
-        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $tech->getId()));
-        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $tech->getId()));
+        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $this->idOf($tech)));
+        $this->assertTrue($this->pdoCategoryRepository->attachToContent(1, $this->idOf($tech)));
 
         $this->assertCount(1, $this->pdoCategoryRepository->getCategoriesByContent(1));
     }
@@ -122,10 +122,10 @@ class PdoCategoryRepositoryTest extends TestCase
         $tech = $this->pdoCategoryRepository->save(new Category(name: 'Technology', slug: 'technology'));
         $news = $this->pdoCategoryRepository->save(new Category(name: 'News', slug: 'news'));
 
-        $this->pdoCategoryRepository->attachToContent(1, $tech->getId());
-        $this->pdoCategoryRepository->attachToContent(1, $news->getId());
+        $this->pdoCategoryRepository->attachToContent(1, $this->idOf($tech));
+        $this->pdoCategoryRepository->attachToContent(1, $this->idOf($news));
 
-        $this->assertTrue($this->pdoCategoryRepository->detachFromContent(1, $tech->getId()));
+        $this->assertTrue($this->pdoCategoryRepository->detachFromContent(1, $this->idOf($tech)));
 
         $categories = $this->pdoCategoryRepository->getCategoriesByContent(1);
         $this->assertCount(1, $categories);
@@ -136,5 +136,15 @@ class PdoCategoryRepositoryTest extends TestCase
     public function test_get_categories_for_content_without_categories_returns_empty_array(): void
     {
         $this->assertEquals([], $this->pdoCategoryRepository->getCategoriesByContent(42));
+    }
+
+    private function idOf(Category $category): int|string
+    {
+        $id = $category->getId();
+        if ($id === null) {
+            throw new \RuntimeException('Expected a persisted category ID.');
+        }
+
+        return $id;
     }
 }

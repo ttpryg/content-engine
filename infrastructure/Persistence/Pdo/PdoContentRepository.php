@@ -68,6 +68,7 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $data ? $this->mapToEntity($data) : null;
     }
 
+    /** @return list<Content> */
     public function findByTenant(?string $tenantType, int|string|null $tenantId, ?string $type = null, int $limit = 20, int $offset = 0): array
     {
         $criteria = [
@@ -81,6 +82,7 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $this->findAll($criteria, $limit, $offset);
     }
 
+    /** @return list<Content> */
     public function findByAuthorId(int|string $authorId, ?string $type = null, int $limit = 20, int $offset = 0): array
     {
         $criteria = ['author_id' => $authorId];
@@ -91,6 +93,11 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $this->findAll($criteria, $limit, $offset);
     }
 
+    /**
+     * @param  array<string, mixed>  $criteria
+     * @param  array<string, 'ASC'|'DESC'>  $orderBy
+     * @return list<Content>
+     */
     public function findAll(array $criteria = [], int $limit = 20, int $offset = 0, array $orderBy = ['created_at' => 'DESC']): array
     {
         // DoS prevention: batasi limit ke rentang 1..MAX_LIMIT dan pastikan offset tidak negatif.
@@ -169,6 +176,7 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $results;
     }
 
+    /** @param array<string, mixed> $criteria */
     public function count(array $criteria = []): int
     {
         $where = ['deleted_at IS NULL'];
@@ -242,6 +250,9 @@ class PdoContentRepository implements ContentRepositoryInterface
         ]);
 
         $id = $this->pdo->lastInsertId();
+        if ($id === false) {
+            throw new \RuntimeException('Failed to retrieve the inserted content ID.');
+        }
         $content->setId($id);
 
         return $content;
@@ -321,34 +332,50 @@ class PdoContentRepository implements ContentRepositoryInterface
         return $stmt->execute(['id' => $id]);
     }
 
+    /** @param array<string, mixed> $data */
     private function mapToEntity(array $data): Content
     {
         $meta = [];
         if (! empty($data['meta'])) {
-            $decoded = json_decode($data['meta'], associative: true);
+            $decoded = json_decode((string) $data['meta'], associative: true);
             if (is_array($decoded)) {
                 $meta = $decoded;
             }
         }
 
         return new Content(
-            title: $data['title'],
-            type: $data['type'],
-            slug: $data['slug'] ?? null,
-            summary: $data['summary'] ?? null,
-            body: $data['body'] ?? null,
+            title: (string) $data['title'],
+            type: (string) ($data['type'] ?? 'post'),
+            slug: $this->stringOrNull($data['slug'] ?? null),
+            summary: $this->stringOrNull($data['summary'] ?? null),
+            body: $this->stringOrNull($data['body'] ?? null),
             meta: $meta,
-            status: $data['status'] ?? 'draft',
+            status: (string) ($data['status'] ?? 'draft'),
             sortOrder: (int) ($data['sort_order'] ?? 0),
             viewCount: (int) ($data['view_count'] ?? 0),
-            authorId: $data['author_id'] ?? null,
-            tenantType: $data['tenant_type'] ?? null,
-            tenantId: $data['tenant_id'] ?? null,
-            publishedAt: ! empty($data['published_at']) ? new DateTimeImmutable($data['published_at']) : null,
-            id: $data['id'],
-            createdAt: ! empty($data['created_at']) ? new DateTimeImmutable($data['created_at']) : null,
-            updatedAt: ! empty($data['updated_at']) ? new DateTimeImmutable($data['updated_at']) : null,
-            deletedAt: ! empty($data['deleted_at']) ? new DateTimeImmutable($data['deleted_at']) : null
+            authorId: $this->idOrNull($data['author_id'] ?? null),
+            tenantType: $this->stringOrNull($data['tenant_type'] ?? null),
+            tenantId: $this->idOrNull($data['tenant_id'] ?? null),
+            publishedAt: $this->dateTimeOrNull($data['published_at'] ?? null),
+            id: $this->idOrNull($data['id'] ?? null),
+            createdAt: $this->dateTimeOrNull($data['created_at'] ?? null),
+            updatedAt: $this->dateTimeOrNull($data['updated_at'] ?? null),
+            deletedAt: $this->dateTimeOrNull($data['deleted_at'] ?? null)
         );
+    }
+
+    private function stringOrNull(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
+    }
+
+    private function idOrNull(mixed $value): int|string|null
+    {
+        return is_int($value) || is_string($value) ? $value : null;
+    }
+
+    private function dateTimeOrNull(mixed $value): ?DateTimeImmutable
+    {
+        return is_string($value) && $value !== '' ? new DateTimeImmutable($value) : null;
     }
 }

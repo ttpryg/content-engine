@@ -1,6 +1,6 @@
 <?php
 
-namespace Ttpryg\ContentEngine\Tests\Unit;
+namespace Ttpryg\ContentEngine\Tests\Unit\Utilities;
 
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;

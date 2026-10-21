@@ -6,6 +6,7 @@ namespace Ttpryg\ContentEngine\Application\DTO;
 
 final class CreateContentRequest
 {
+    /** @param array<string, mixed> $meta */
     public function __construct(
         public readonly string $title,
         public readonly string $type = 'post',

@@ -37,6 +37,7 @@ class InMemoryCategoryRepository implements CategoryRepositoryInterface
         return null;
     }
 
+    /** @return list<Category> */
     public function findAll(string $type = 'category'): array
     {
         $categories = array_values(array_filter(
@@ -104,6 +105,7 @@ class InMemoryCategoryRepository implements CategoryRepositoryInterface
         return true;
     }
 
+    /** @return list<Category> */
     public function getCategoriesByContent(int|string $contentId): array
     {
         $categories = [];

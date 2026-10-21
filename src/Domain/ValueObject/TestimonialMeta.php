@@ -13,16 +13,18 @@ final class TestimonialMeta
         public readonly ?string $avatarUrl = null
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
-            company: $data['company'] ?? null,
-            position: $data['position'] ?? null,
-            rating: isset($data['rating']) ? (int) $data['rating'] : null,
-            avatarUrl: $data['avatar_url'] ?? null
+            company: self::stringOrNull($data['company'] ?? null),
+            position: self::stringOrNull($data['position'] ?? null),
+            rating: self::intOrNull($data['rating'] ?? null),
+            avatarUrl: self::stringOrNull($data['avatar_url'] ?? null)
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return array_filter([
@@ -31,5 +33,15 @@ final class TestimonialMeta
             'rating' => $this->rating,
             'avatar_url' => $this->avatarUrl,
         ], fn (int|string|null $val): bool => $val !== null);
+    }
+
+    private static function stringOrNull(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
+    }
+
+    private static function intOrNull(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
     }
 }
