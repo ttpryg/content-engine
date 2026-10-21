@@ -37,7 +37,10 @@ final class ViewContentUseCase
         // row-lock contention. Konsumen event (Redis / _modules/queue) yang menanggung
         // buffering & flush asinkron.
         if (! $this->deferViewCounts) {
-            $this->contentRepository->incrementViews($content->getId());
+            $id = $content->getId();
+            if ($id !== null) {
+                $this->contentRepository->incrementViews($id);
+            }
         }
 
         return $content;

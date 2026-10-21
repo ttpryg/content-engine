@@ -1,6 +1,6 @@
 <?php
 
-namespace Ttpryg\ContentEngine\Tests\Integration;
+namespace Ttpryg\ContentEngine\Tests\Integration\Infrastructure\Persistence\Pdo;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -105,8 +105,9 @@ class PdoContentRepositoryTest extends TestCase
         $this->assertEquals('Post 1', $publishedPosts[0]->getTitle());
 
         // Test Increment Views
-        $this->pdoContentRepository->incrementViews($publishedPosts[0]->getId());
-        $updated = $this->pdoContentRepository->findById($publishedPosts[0]->getId());
+        $this->pdoContentRepository->incrementViews($this->idOf($publishedPosts[0]));
+        $updated = $this->pdoContentRepository->findById($this->idOf($publishedPosts[0]))
+            ?? throw new \RuntimeException('Expected updated content.');
         $this->assertEquals(1, $updated->getViewCount());
     }
 
@@ -115,7 +116,7 @@ class PdoContentRepositoryTest extends TestCase
     {
         $content = new Content('ToDelete', type: 'post');
         $saved = $this->pdoContentRepository->save($content);
-        $id = $saved->getId();
+        $id = $this->idOf($saved);
 
         $this->pdoContentRepository->delete($id, softDelete: true);
 
@@ -183,14 +184,14 @@ class PdoContentRepositoryTest extends TestCase
         $this->assertEquals('my-unique-post', $original->getSlug());
 
         // Soft delete konten asli; slug 'my-unique-post' masih terpakai di tabel (deleted_at terisi).
-        $contentService->delete($original->getId());
+        $contentService->delete($this->idOf($original));
 
         // Konten baru dengan judul sama harus mendapat slug baru, bukan menabrak slug item trashed.
         $recreated = $contentService->createContent(new CreateContentRequest(title: 'My Unique Post', type: 'post'));
         $this->assertEquals('my-unique-post-1', $recreated->getSlug());
 
         // Restore konten asli: keduanya hidup berdampingan tanpa melanggar UNIQUE (tenant_type, tenant_id, type, slug).
-        $this->assertTrue($this->pdoContentRepository->restore($original->getId()));
+        $this->assertTrue($this->pdoContentRepository->restore($this->idOf($original)));
         $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post', 'post'));
         $this->assertNotNull($this->pdoContentRepository->findBySlug('my-unique-post-1', 'post'));
     }
@@ -202,35 +203,35 @@ class PdoContentRepositoryTest extends TestCase
         $trashed = $this->pdoContentRepository->save(new Content('Trashed Post', type: 'post', slug: 'trashed-post'));
 
         // Soft delete satu konten
-        $this->pdoContentRepository->delete($trashed->getId(), softDelete: true);
+        $this->pdoContentRepository->delete($this->idOf($trashed), softDelete: true);
 
         // Semua query baca harus mengabaikan konten ter-soft-delete
         $this->assertCount(1, $this->pdoContentRepository->findAll(criteria: ['type' => 'post']));
         $this->assertEquals(1, $this->pdoContentRepository->count(['type' => 'post']));
         $this->assertNull($this->pdoContentRepository->findBySlug('trashed-post', 'post'));
-        $this->assertNull($this->pdoContentRepository->findById($trashed->getId()));
+        $this->assertNull($this->pdoContentRepository->findById($this->idOf($trashed)));
         $this->assertEquals(
             ['kept-post'],
-            array_map(fn ($c) => $c->getSlug(), $this->pdoContentRepository->findAll(criteria: ['type' => 'post']))
+            array_map(fn (\Ttpryg\ContentEngine\Domain\Entity\Content $c): ?string => $c->getSlug(), $this->pdoContentRepository->findAll(criteria: ['type' => 'post']))
         );
 
         // Konten yang tersisa tetap terbaca normal
-        $this->assertNotNull($this->pdoContentRepository->findById($kept->getId()));
+        $this->assertNotNull($this->pdoContentRepository->findById($this->idOf($kept)));
 
         // Restore mengembalikan konten ke semua query baca
-        $this->assertTrue($this->pdoContentRepository->restore($trashed->getId()));
+        $this->assertTrue($this->pdoContentRepository->restore($this->idOf($trashed)));
 
         $this->assertCount(2, $this->pdoContentRepository->findAll(criteria: ['type' => 'post']));
         $this->assertEquals(2, $this->pdoContentRepository->count(['type' => 'post']));
         $this->assertNotNull($this->pdoContentRepository->findBySlug('trashed-post', 'post'));
-        $this->assertNotNull($this->pdoContentRepository->findById($trashed->getId()));
+        $this->assertNotNull($this->pdoContentRepository->findById($this->idOf($trashed)));
     }
 
     // EDGE CASE: Hard delete (softDelete=false) menghapus baris permanen, restore tidak berpengaruh
     public function test_hard_deleted_content_cannot_be_restored(): void
     {
         $content = $this->pdoContentRepository->save(new Content('Hard Deleted', type: 'post', slug: 'hard-deleted'));
-        $id = $content->getId();
+        $id = $this->idOf($content);
 
         $this->pdoContentRepository->delete($id, softDelete: false);
 
@@ -240,5 +241,15 @@ class PdoContentRepositoryTest extends TestCase
         // Pdo tidak error, tapi konten tetap tidak ditemukan.
         $this->pdoContentRepository->restore($id);
         $this->assertNull($this->pdoContentRepository->findById($id, includeTrashed: true));
+    }
+
+    private function idOf(Content $content): int|string
+    {
+        $id = $content->getId();
+        if ($id === null) {
+            throw new \RuntimeException('Expected a persisted content ID.');
+        }
+
+        return $id;
     }
 }

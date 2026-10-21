@@ -74,6 +74,7 @@ class Category
         return $this->createdAt;
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

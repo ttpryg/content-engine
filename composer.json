@@ -18,6 +18,7 @@
     "require-dev": {
         "ergebnis/composer-normalize": "^2.53",
         "laravel/pint": "^1.20",
+        "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^10.0",
         "rector/rector": "^2.6"
     },
@@ -44,7 +45,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "analyse": "vendor/bin/phpstan analyse --level=5 src infrastructure database/migrations tests",
+        "analyse": "vendor/bin/phpstan analyse",
         "fix": [
             "vendor/bin/rector process",
             "vendor/bin/pint"
@@ -52,7 +53,7 @@
         "fix:check": [
             "vendor/bin/rector process --dry-run",
             "vendor/bin/pint --test",
-            "vendor/bin/phpstan analyse --level=5 src infrastructure database/migrations tests"
+            "vendor/bin/phpstan analyse"
         ],
         "test": "vendor/bin/phpunit"
     }

@@ -66,6 +66,7 @@ class InMemoryContentRepository implements ContentRepositoryInterface
         return null;
     }
 
+    /** @return list<Content> */
     public function findByTenant(?string $tenantType, int|string|null $tenantId, ?string $type = null, int $limit = 20, int $offset = 0): array
     {
         $criteria = [
@@ -80,6 +81,7 @@ class InMemoryContentRepository implements ContentRepositoryInterface
         return $this->findAll($criteria, $limit, $offset);
     }
 
+    /** @return list<Content> */
     public function findByAuthorId(int|string $authorId, ?string $type = null, int $limit = 20, int $offset = 0): array
     {
         $criteria = ['author_id' => $authorId];
@@ -91,6 +93,11 @@ class InMemoryContentRepository implements ContentRepositoryInterface
         return $this->findAll($criteria, $limit, $offset);
     }
 
+    /**
+     * @param  array<string, mixed>  $criteria
+     * @param  array<string, 'ASC'|'DESC'>  $orderBy
+     * @return list<Content>
+     */
     public function findAll(array $criteria = [], int $limit = 20, int $offset = 0, array $orderBy = ['created_at' => 'DESC']): array
     {
         $limit = min(max(1, $limit), self::MAX_LIMIT);
@@ -106,6 +113,7 @@ class InMemoryContentRepository implements ContentRepositoryInterface
         return array_slice($results, $offset, $limit);
     }
 
+    /** @param array<string, mixed> $criteria */
     public function count(array $criteria = []): int
     {
         unset($criteria['search']);

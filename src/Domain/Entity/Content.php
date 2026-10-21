@@ -18,6 +18,7 @@ class Content implements ContentInterface
 
     private DateTimeInterface $updatedAt;
 
+    /** @param array<string, mixed> $meta */
     public function __construct(
         private string $title,
         private string $type = 'post',
@@ -150,11 +151,13 @@ class Content implements ContentInterface
         return $this;
     }
 
+    /** @return array<string, mixed> */
     public function getMeta(): array
     {
         return $this->meta;
     }
 
+    /** @param array<string, mixed> $meta */
     public function setMeta(array $meta): self
     {
         $this->meta = $meta;
@@ -239,6 +242,7 @@ class Content implements ContentInterface
         return $this;
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

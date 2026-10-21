@@ -20,6 +20,7 @@ interface ContentInterface
 
     public function getBody(): ?string;
 
+    /** @return array<string, mixed> */
     public function getMeta(): array;
 
     public function getStatus(): string;

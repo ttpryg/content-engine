@@ -160,7 +160,7 @@ $contentService = new ContentService(
 
 ```bash
 composer test      # PHPUnit (unit + integration, in-memory SQLite)
-composer analyse   # PHPStan level 5 (src + tests)
+composer analyse   # PHPStan level 8 (src, infrastructure, migrations, tests)
 composer fix       # Rector + Pint (auto-fix)
 composer fix:check # Rector dry-run + Pint test + PHPStan (CI gate)
 ```

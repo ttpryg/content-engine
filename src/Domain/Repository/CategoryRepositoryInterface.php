@@ -12,6 +12,7 @@ interface CategoryRepositoryInterface
 
     public function findBySlug(string $slug): ?Category;
 
+    /** @return list<Category> */
     public function findAll(string $type = 'category'): array;
 
     public function save(Category $category): Category;
@@ -22,5 +23,6 @@ interface CategoryRepositoryInterface
 
     public function detachFromContent(int|string $contentId, int|string $categoryId): bool;
 
+    /** @return list<Category> */
     public function getCategoriesByContent(int|string $contentId): array;
 }
