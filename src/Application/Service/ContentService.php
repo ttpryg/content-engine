@@ -14,7 +14,6 @@ use Ttpryg\ContentEngine\Application\UseCase\ViewContentUseCase;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
-use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class ContentService
 {
@@ -30,12 +29,10 @@ class ContentService
 
     public function __construct(
         ContentRepositoryInterface $contentRepository,
-        ?SlugGeneratorInterface $slugGenerator = null,
+        SlugGeneratorInterface $slugGenerator,
         ?EventDispatcherInterface $eventDispatcher = null,
         bool $deferViewCounts = false
     ) {
-        $slugGenerator ??= new NativeSlugGenerator;
-
         $this->createContentUseCase = new CreateContentUseCase($contentRepository, $slugGenerator, $eventDispatcher);
         $this->publishContentUseCase = new PublishContentUseCase($contentRepository, $eventDispatcher);
         $this->archiveContentUseCase = new ArchiveContentUseCase($contentRepository, $eventDispatcher);

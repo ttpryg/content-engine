@@ -14,6 +14,7 @@ use Ttpryg\ContentEngine\Domain\Event\ContentViewedEvent;
 use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
+use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class ContentServiceTest extends TestCase
 {
@@ -58,7 +59,7 @@ class ContentServiceTest extends TestCase
 
         $this->expectException(InvalidContentStatusException::class);
 
-        $contentService = new ContentService($repo);
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
         $contentService->createContent(new CreateContentRequest(
             title: 'Invalid Post',
             status: 'non_existent_status'
@@ -79,7 +80,7 @@ class ContentServiceTest extends TestCase
             ->method('dispatch')
             ->with($this->isInstanceOf(ContentPublishedEvent::class));
 
-        $contentService = new ContentService($repo, eventDispatcher: $dispatcher);
+        $contentService = new ContentService($repo, new NativeSlugGenerator, eventDispatcher: $dispatcher);
         $result = $contentService->publish(5);
 
         $this->assertTrue($result);
@@ -95,7 +96,7 @@ class ContentServiceTest extends TestCase
 
         $this->expectException(ContentNotFoundException::class);
 
-        $contentService = new ContentService($repo);
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
         $contentService->publish(999);
     }
 
@@ -150,7 +151,7 @@ class ContentServiceTest extends TestCase
             ->method('dispatch')
             ->with($this->isInstanceOf(ContentViewedEvent::class));
 
-        $contentService = new ContentService($repo, eventDispatcher: $dispatcher);
+        $contentService = new ContentService($repo, new NativeSlugGenerator, eventDispatcher: $dispatcher);
         $result = $contentService->getContentBySlug('viewed-post');
 
         $this->assertEquals('Viewed Post', $result->getTitle());
@@ -172,7 +173,7 @@ class ContentServiceTest extends TestCase
             ->method('dispatch')
             ->with($this->isInstanceOf(ContentViewedEvent::class));
 
-        $contentService = new ContentService($repo, eventDispatcher: $dispatcher, deferViewCounts: true);
+        $contentService = new ContentService($repo, new NativeSlugGenerator, eventDispatcher: $dispatcher, deferViewCounts: true);
         $result = $contentService->getContentBySlug('viewed-post');
 
         $this->assertEquals(10, $result->getId());
@@ -187,7 +188,7 @@ class ContentServiceTest extends TestCase
 
         $this->expectException(ContentNotFoundException::class);
 
-        $contentService = new ContentService($repo);
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
         $contentService->getContentBySlug('missing-post');
     }
 }
