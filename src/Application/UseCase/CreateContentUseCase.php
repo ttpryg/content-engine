@@ -25,9 +25,7 @@ final class CreateContentUseCase
 
     public function execute(CreateContentRequest $request): Content
     {
-        if (! ContentStatus::isValid($request->status)) {
-            throw new InvalidContentStatusException($request->status);
-        }
+        $status = ContentStatus::tryFrom($request->status) ?? throw new InvalidContentStatusException($request->status);
 
         $generatedSlug = $request->slug ?: $this->generateUniqueSlug(
             $request->title,
@@ -36,7 +34,7 @@ final class CreateContentUseCase
             $request->tenantId
         );
 
-        $publishedAt = $request->status === ContentStatus::PUBLISHED->value ? new DateTimeImmutable : null;
+        $publishedAt = $status === ContentStatus::PUBLISHED ? new DateTimeImmutable : null;
 
         $content = new Content(
             title: $request->title,
@@ -45,7 +43,7 @@ final class CreateContentUseCase
             summary: $request->summary,
             body: $request->body,
             meta: $request->meta,
-            status: $request->status,
+            status: $status,
             sortOrder: $request->sortOrder,
             authorId: $request->authorId,
             tenantType: $request->tenantType,
@@ -57,7 +55,7 @@ final class CreateContentUseCase
 
         $this->eventDispatcher?->dispatch(new ContentCreatedEvent($savedContent));
 
-        if ($request->status === ContentStatus::PUBLISHED->value) {
+        if ($status === ContentStatus::PUBLISHED) {
             $this->eventDispatcher?->dispatch(new ContentPublishedEvent($savedContent));
         }
 

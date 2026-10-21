@@ -6,6 +6,8 @@ namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Domain\ValueObject\TestimonialMeta;
 
 class ContentEntityTest extends TestCase
@@ -25,7 +27,7 @@ class ContentEntityTest extends TestCase
             slug: 'john-doe-testimonial',
             body: 'Great service!',
             meta: $testimonialMeta->toArray(),
-            status: 'published',
+            status: ContentStatus::PUBLISHED,
             sortOrder: 1,
             id: 10
         );
@@ -41,14 +43,34 @@ class ContentEntityTest extends TestCase
         $this->assertEquals(5, $extractedMeta->rating);
     }
 
-    // NEGATIVE CASE: Invalid Status Fallbacks to Draft
-    public function test_invalid_status_defaults_to_draft(): void
+    // NEGATIVE CASE: Invalid Status Throws Exception Instead of Silent Fallback
+    public function test_invalid_status_throws_exception(): void
     {
-        $content = new Content(
+        $this->expectException(InvalidContentStatusException::class);
+
+        new Content(
             title: 'Some Page',
             status: 'invalid_status_name'
         );
+    }
 
-        $this->assertEquals('draft', $content->getStatus());
+    // POSITIVE CASE: setStatus Accepts Backed Enum
+    public function test_set_status_accepts_backed_enum(): void
+    {
+        $content = new Content(title: 'Some Page');
+
+        $content->setStatus(ContentStatus::PUBLISHED);
+
+        $this->assertSame('published', $content->getStatus());
+    }
+
+    // NEGATIVE CASE: setStatus Rejects Invalid String
+    public function test_set_status_rejects_invalid_string(): void
+    {
+        $content = new Content(title: 'Some Page');
+
+        $this->expectException(InvalidContentStatusException::class);
+
+        $content->setStatus('invalid_status_name');
     }
 }

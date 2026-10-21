@@ -8,10 +8,11 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Ttpryg\ContentEngine\Contracts\ContentInterface;
 use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 
 class Content implements ContentInterface
 {
-    private string $status;
+    private ContentStatus $status;
 
     private readonly DateTimeInterface $createdAt;
 
@@ -24,7 +25,7 @@ class Content implements ContentInterface
         private ?string $summary = null,
         private ?string $body = null,
         private array $meta = [],
-        string $status = 'draft',
+        ContentStatus|string $status = ContentStatus::DRAFT,
         private int $sortOrder = 0,
         private int $viewCount = 0,
         private int|string|null $authorId = null,
@@ -36,7 +37,7 @@ class Content implements ContentInterface
         ?DateTimeInterface $updatedAt = null,
         private ?DateTimeInterface $deletedAt = null
     ) {
-        $this->status = ContentStatus::isValid($status) ? $status : ContentStatus::DRAFT->value;
+        $this->status = $this->normalizeStatus($status);
         $this->createdAt = $createdAt ?? new DateTimeImmutable;
         $this->updatedAt = $updatedAt ?? new DateTimeImmutable;
     }
@@ -163,14 +164,12 @@ class Content implements ContentInterface
 
     public function getStatus(): string
     {
-        return $this->status;
+        return $this->status->value;
     }
 
-    public function setStatus(string $status): self
+    public function setStatus(ContentStatus|string $status): self
     {
-        if (ContentStatus::isValid($status)) {
-            $this->status = $status;
-        }
+        $this->status = $this->normalizeStatus($status);
 
         return $this;
     }
@@ -253,7 +252,7 @@ class Content implements ContentInterface
             'summary' => $this->summary,
             'body' => $this->body,
             'meta' => $this->meta,
-            'status' => $this->status,
+            'status' => $this->status->value,
             'sort_order' => $this->sortOrder,
             'view_count' => $this->viewCount,
             'published_at' => $this->publishedAt?->format(DateTimeInterface::ATOM),
@@ -261,5 +260,14 @@ class Content implements ContentInterface
             'updated_at' => $this->updatedAt->format(DateTimeInterface::ATOM),
             'deleted_at' => $this->deletedAt?->format(DateTimeInterface::ATOM),
         ];
+    }
+
+    private function normalizeStatus(ContentStatus|string $status): ContentStatus
+    {
+        if ($status instanceof ContentStatus) {
+            return $status;
+        }
+
+        return ContentStatus::tryFrom($status) ?? throw new InvalidContentStatusException($status);
     }
 }

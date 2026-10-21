@@ -27,7 +27,7 @@ final class PublishContentUseCase
             throw ContentNotFoundException::byId($id);
         }
 
-        $content->setStatus(ContentStatus::PUBLISHED->value);
+        $content->setStatus(ContentStatus::PUBLISHED);
         if (! $content->getPublishedAt() instanceof DateTimeInterface) {
             $content->setPublishedAt(new DateTimeImmutable);
         }
