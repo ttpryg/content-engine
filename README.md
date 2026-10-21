@@ -18,6 +18,7 @@
   - `SeoMeta`: Meta Title, Meta Description, OG Image, Keywords.
 - **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision.
 - **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`, dispatched through the PSR-14 `Psr\EventDispatcher\EventDispatcherInterface` so any compliant dispatcher can be used.
+- **Explicit Use Cases & DTOs**: content create/publish/archive/delete/view actions live in `Application\UseCase`, with `CreateContentRequest` replacing long primitive argument lists; `ContentService` remains the convenience facade.
 - **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), and parameterized PDO queries throughout.
 - **Versioned Schema Migrations**: PHP-based migrations backed by [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator) and a `content_engine_migrations` tracker table — migrations run once, are recorded only after success, support rollback, and resume safely after failures.
 - **Scalability Options**: `deferViewCounts: true` skips the per-read `UPDATE view_count` (avoids row-lock contention under heavy traffic); `ContentViewedEvent` provides the hook for async buffering (Redis / queue).
@@ -64,8 +65,9 @@ CREATE TABLE IF NOT EXISTS contents (
 
 ```php
 use PDO;
-use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
+use Ttpryg\ContentEngine\Application\DTO\CreateContentRequest;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
 
 // 1. Initialize PDO & Services
 $pdo = new PDO("mysql:host=localhost;dbname=my_db", "root", "secret");
@@ -73,15 +75,15 @@ $contentRepo = new PdoContentRepository($pdo);
 $contentService = new ContentService($contentRepo);
 
 // 2. Create Global Platform Announcement (Admin)
-$globalPost = $contentService->createContent(
+$globalPost = $contentService->createContent(new CreateContentRequest(
     title: 'Platform Maintenance Schedule',
     type: 'post',
     body: 'System will be updated on Sunday...',
     status: 'published'
-);
+));
 
 // 3. Create Store-Specific News (Owner of Store 101)
-$storePost = $contentService->createContent(
+$storePost = $contentService->createContent(new CreateContentRequest(
     title: 'Grand Opening Sale at Toko Sepatu Jaya!',
     type: 'post',
     body: 'Visit our store for 50% off...',
@@ -89,7 +91,7 @@ $storePost = $contentService->createContent(
     authorId: 77,         // User ID from auth-user
     tenantType: 'store',  // Tenant Scope
     tenantId: '101'       // Store ID
-);
+));
 
 // 4. Query Posts for Store 101
 $storePosts = $contentRepo->findByTenant(tenantType: 'store', tenantId: '101', type: 'post');

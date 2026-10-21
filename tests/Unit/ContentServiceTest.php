@@ -4,6 +4,7 @@ namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Ttpryg\ContentEngine\Application\DTO\CreateContentRequest;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
@@ -39,7 +40,11 @@ class ContentServiceTest extends TestCase
             ->with($this->isInstanceOf(ContentCreatedEvent::class));
 
         $contentService = new ContentService($repo, $slugGen, $dispatcher);
-        $content = $contentService->createContent('My First Post', type: 'post', body: 'Hello world');
+        $content = $contentService->createContent(new CreateContentRequest(
+            title: 'My First Post',
+            type: 'post',
+            body: 'Hello world'
+        ));
 
         $this->assertEquals(1, $content->getId());
         $this->assertEquals('my-first-post', $content->getSlug());
@@ -54,7 +59,10 @@ class ContentServiceTest extends TestCase
         $this->expectException(InvalidContentStatusException::class);
 
         $contentService = new ContentService($repo);
-        $contentService->createContent('Invalid Post', status: 'non_existent_status');
+        $contentService->createContent(new CreateContentRequest(
+            title: 'Invalid Post',
+            status: 'non_existent_status'
+        ));
     }
 
     // POSITIVE CASE: Publish Content
@@ -117,7 +125,10 @@ class ContentServiceTest extends TestCase
         });
 
         $contentService = new ContentService($repo, $slugGen);
-        $content = $contentService->createContent('My First Post', type: 'post');
+        $content = $contentService->createContent(new CreateContentRequest(
+            title: 'My First Post',
+            type: 'post'
+        ));
 
         $this->assertEquals('my-first-post-1', $content->getSlug());
     }

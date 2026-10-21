@@ -4,6 +4,7 @@ namespace Ttpryg\ContentEngine\Tests\Integration;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
+use Ttpryg\ContentEngine\Application\DTO\CreateContentRequest;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
@@ -177,14 +178,14 @@ class PdoContentRepositoryTest extends TestCase
     {
         $contentService = new ContentService($this->pdoContentRepository);
 
-        $original = $contentService->createContent('My Unique Post', type: 'post');
+        $original = $contentService->createContent(new CreateContentRequest(title: 'My Unique Post', type: 'post'));
         $this->assertEquals('my-unique-post', $original->getSlug());
 
         // Soft delete konten asli; slug 'my-unique-post' masih terpakai di tabel (deleted_at terisi).
         $contentService->delete($original->getId());
 
         // Konten baru dengan judul sama harus mendapat slug baru, bukan menabrak slug item trashed.
-        $recreated = $contentService->createContent('My Unique Post', type: 'post');
+        $recreated = $contentService->createContent(new CreateContentRequest(title: 'My Unique Post', type: 'post'));
         $this->assertEquals('my-unique-post-1', $recreated->getSlug());
 
         // Restore konten asli: keduanya hidup berdampingan tanpa melanggar UNIQUE (tenant_type, tenant_id, type, slug).
