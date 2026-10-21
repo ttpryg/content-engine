@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS contents (
 
 ```php
 use PDO;
-use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
 
 // 1. Initialize PDO & Services
@@ -93,6 +93,23 @@ $storePost = $contentService->createContent(
 
 // 4. Query Posts for Store 101
 $storePosts = $contentRepo->findByTenant(tenantType: 'store', tenantId: '101', type: 'post');
+```
+
+---
+
+## 🧱 Persistence Adapters
+
+The module core (`src/`) depends only on repository ports. Concrete storage lives under `infrastructure/`:
+
+- `Infrastructure\Persistence\Pdo\PdoContentRepository` and `PdoCategoryRepository` for production PDO storage (MySQL, MariaDB, SQLite).
+- `Infrastructure\Persistence\InMemory\InMemoryContentRepository` and `InMemoryCategoryRepository` as fast fakes for tests and prototypes.
+
+```php
+use Ttpryg\ContentEngine\Infrastructure\Persistence\InMemory\InMemoryContentRepository;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\InMemory\InMemoryCategoryRepository;
+
+$contentRepository = new InMemoryContentRepository;
+$categoryRepository = new InMemoryCategoryRepository;
 ```
 
 ---

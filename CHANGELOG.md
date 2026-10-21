@@ -7,12 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- In-memory repository implementations (`InMemoryContentRepository`,
+  `InMemoryCategoryRepository`) for fast, database-free fakes in tests and prototypes.
+
 ### Changed
 
 - **Breaking:** separated the domain and application layers. Entities, value objects,
   enums, events, repository interfaces, and exceptions now live under
   `Ttpryg\ContentEngine\Domain\*`, while application services moved to
   `Ttpryg\ContentEngine\Application\Service\*`. Update imports accordingly.
+- **Breaking:** PDO persistence adapters moved out of the module core from
+  `Ttpryg\ContentEngine\Repositories` to
+  `Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo`. The module core now depends
+  only on repository ports; register the `Infrastructure` PSR-4 namespace when using
+  the bundled adapters.
 
 ## [1.3.0] - 2026-10-18
 

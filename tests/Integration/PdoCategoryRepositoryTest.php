@@ -5,7 +5,7 @@ namespace Ttpryg\ContentEngine\Tests\Integration;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
-use Ttpryg\ContentEngine\Repositories\PdoCategoryRepository;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoCategoryRepository;
 
 class PdoCategoryRepositoryTest extends TestCase
 {

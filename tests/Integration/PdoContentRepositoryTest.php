@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
-use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
 
 class PdoContentRepositoryTest extends TestCase
 {
