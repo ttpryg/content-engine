@@ -68,11 +68,12 @@ use PDO;
 use Ttpryg\ContentEngine\Application\DTO\CreateContentRequest;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
+use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 // 1. Initialize PDO & Services
 $pdo = new PDO("mysql:host=localhost;dbname=my_db", "root", "secret");
 $contentRepo = new PdoContentRepository($pdo);
-$contentService = new ContentService($contentRepo);
+$contentService = new ContentService($contentRepo, new NativeSlugGenerator);
 
 // 2. Create Global Platform Announcement (Admin)
 $globalPost = $contentService->createContent(new CreateContentRequest(
@@ -141,9 +142,11 @@ By default, every read via `getContentBySlug()` runs `UPDATE contents SET view_c
 
 ```php
 use Ttpryg\ContentEngine\Application\Service\ContentService;
+use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 $contentService = new ContentService(
     contentRepository: $contentRepo,
+    slugGenerator: new NativeSlugGenerator,
     eventDispatcher: $dispatcher,
     deferViewCounts: true   // no UPDATE on read
 );

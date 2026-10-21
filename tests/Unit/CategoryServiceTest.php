@@ -8,6 +8,7 @@ use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
 use Ttpryg\ContentEngine\Domain\Exception\CategoryNotFoundException;
 use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
+use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class CategoryServiceTest extends TestCase
 {
@@ -69,7 +70,7 @@ class CategoryServiceTest extends TestCase
             ->with(10, 5)
             ->willReturn(true);
 
-        $categoryService = new CategoryService($repo);
+        $categoryService = new CategoryService($repo, new NativeSlugGenerator);
 
         $this->assertTrue($categoryService->attachCategoryToContent(10, 5));
     }
@@ -84,7 +85,7 @@ class CategoryServiceTest extends TestCase
 
         $this->expectException(CategoryNotFoundException::class);
 
-        $categoryService = new CategoryService($repo);
+        $categoryService = new CategoryService($repo, new NativeSlugGenerator);
         $categoryService->attachCategoryToContent(10, 999);
     }
 
@@ -98,7 +99,7 @@ class CategoryServiceTest extends TestCase
             ->with(10, 5)
             ->willReturn(true);
 
-        $categoryService = new CategoryService($repo);
+        $categoryService = new CategoryService($repo, new NativeSlugGenerator);
 
         $this->assertTrue($categoryService->detachCategoryFromContent(10, 5));
     }

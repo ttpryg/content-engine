@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo`. The module core now depends
   only on repository ports; register the `Infrastructure` PSR-4 namespace when using
   the bundled adapters.
+- **Breaking:** `ContentService` and `CategoryService` now require a
+  `SlugGeneratorInterface` in the constructor instead of creating a
+  `NativeSlugGenerator` implicitly. Inject `NativeSlugGenerator` or a custom
+  implementation from the composition root.
 - **Breaking:** `ContentService::createContent()` now accepts a
   `Ttpryg\ContentEngine\Application\DTO\CreateContentRequest` instead of eleven
   positional/named primitive arguments. The main content actions are now explicit

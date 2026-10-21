@@ -8,16 +8,13 @@ use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
 use Ttpryg\ContentEngine\Domain\Exception\CategoryNotFoundException;
 use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
-use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class CategoryService
 {
     public function __construct(
         private readonly CategoryRepositoryInterface $categoryRepository,
-        private ?SlugGeneratorInterface $slugGenerator = null
-    ) {
-        $this->slugGenerator = $slugGenerator ?? new NativeSlugGenerator;
-    }
+        private readonly SlugGeneratorInterface $slugGenerator
+    ) {}
 
     public function createCategory(string $name, string $type = 'category', ?string $slug = null): Category
     {
@@ -35,7 +32,7 @@ class CategoryService
     public function attachCategoryToContent(int|string $contentId, int|string $categoryId): bool
     {
         $category = $this->categoryRepository->findById($categoryId);
-        if (! $category instanceof \Ttpryg\ContentEngine\Domain\Entity\Category) {
+        if (! $category instanceof Category) {
             throw CategoryNotFoundException::byId($categoryId);
         }
 

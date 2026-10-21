@@ -9,6 +9,7 @@ use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
 use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
+use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class PdoContentRepositoryTest extends TestCase
 {
@@ -176,7 +177,7 @@ class PdoContentRepositoryTest extends TestCase
     // INTEGRITY CASE: Slug item soft-deleted tidak dipakai ulang, dan restore() aman dari tabrakan unique key
     public function test_slug_collision_with_soft_deleted_content_is_prevented(): void
     {
-        $contentService = new ContentService($this->pdoContentRepository);
+        $contentService = new ContentService($this->pdoContentRepository, new NativeSlugGenerator);
 
         $original = $contentService->createContent(new CreateContentRequest(title: 'My Unique Post', type: 'post'));
         $this->assertEquals('my-unique-post', $original->getSlug());
