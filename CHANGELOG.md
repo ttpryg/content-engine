@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo`. The module core now depends
   only on repository ports; register the `Infrastructure` PSR-4 namespace when using
   the bundled adapters.
+- **Breaking:** replaced the custom migration runner with
+  [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator). Migrations
+  are now dated PHP classes with `up()` and `down()` support; the entry point moved to
+  `Ttpryg\ContentEngine\Infrastructure\Database\DatabaseMigrator`. The legacy custom
+  runner and `database/schema.sql` were removed. Existing deployments tracked by the
+  legacy `001_add_unique_tenant_slug` name remain compatible.
 
 ## [1.3.0] - 2026-10-18
 

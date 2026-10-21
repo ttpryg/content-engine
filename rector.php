@@ -9,6 +9,7 @@ return RectorConfig::configure()
     ->withPaths([
         __DIR__.'/src',
         __DIR__.'/infrastructure',
+        __DIR__.'/database/migrations',
         __DIR__.'/tests',
     ])
     ->withPhpSets(php81: true)
