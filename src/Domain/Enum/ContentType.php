@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Ttpryg\ContentEngine\Domain\Enum;
 
-class ContentType
+enum ContentType: string
 {
-    public const PAGE = 'page';
-
-    public const POST = 'post';
-
-    public const TESTIMONIAL = 'testimonial';
-
-    public const FAQ = 'faq';
+    case PAGE = 'page';
+    case POST = 'post';
+    case TESTIMONIAL = 'testimonial';
+    case FAQ = 'faq';
 }
