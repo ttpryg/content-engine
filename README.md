@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS contents (
 ```php
 use PDO;
 use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
-use Ttpryg\ContentEngine\Services\ContentService;
+use Ttpryg\ContentEngine\Application\Service\ContentService;
 
 // 1. Initialize PDO & Services
 $pdo = new PDO("mysql:host=localhost;dbname=my_db", "root", "secret");
@@ -126,7 +126,7 @@ $runner->appliedMigrations();  // full applied history
 By default, every read via `getContentBySlug()` runs `UPDATE contents SET view_count = view_count + 1`, taking a row lock per read. Under heavy traffic, enable deferred counting:
 
 ```php
-use Ttpryg\ContentEngine\Services\ContentService;
+use Ttpryg\ContentEngine\Application\Service\ContentService;
 
 $contentService = new ContentService(
     contentRepository: $contentRepo,

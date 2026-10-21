@@ -6,9 +6,9 @@ namespace Ttpryg\ContentEngine\Repositories;
 
 use DateTimeImmutable;
 use PDO;
-use Ttpryg\ContentEngine\Contracts\ContentRepositoryInterface;
-use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\Exceptions\InvalidOrderByException;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
+use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
 class PdoContentRepository implements ContentRepositoryInterface
 {

@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Services;
+namespace Ttpryg\ContentEngine\Application\Service;
 
 use DateTimeImmutable;
-use Ttpryg\ContentEngine\Contracts\ContentRepositoryInterface;
 use Ttpryg\ContentEngine\Contracts\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
-use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\Events\ContentArchivedEvent;
-use Ttpryg\ContentEngine\Events\ContentCreatedEvent;
-use Ttpryg\ContentEngine\Events\ContentDeletedEvent;
-use Ttpryg\ContentEngine\Events\ContentPublishedEvent;
-use Ttpryg\ContentEngine\Events\ContentViewedEvent;
-use Ttpryg\ContentEngine\Exceptions\ContentNotFoundException;
-use Ttpryg\ContentEngine\Exceptions\InvalidContentStatusException;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
+use Ttpryg\ContentEngine\Domain\Event\ContentArchivedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentCreatedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentDeletedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentPublishedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentViewedEvent;
+use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
+use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
-use Ttpryg\ContentEngine\ValueObjects\ContentStatus;
 
 class ContentService
 {
@@ -86,7 +86,7 @@ class ContentService
     public function publish(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Domain\Entity\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -106,7 +106,7 @@ class ContentService
     public function archive(int|string $id): bool
     {
         $content = $this->contentRepository->findById($id);
-        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Domain\Entity\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -123,7 +123,7 @@ class ContentService
     public function delete(int|string $id, bool $softDelete = true): bool
     {
         $content = $this->contentRepository->findById($id, includeTrashed: true);
-        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Domain\Entity\Content) {
             throw ContentNotFoundException::byId($id);
         }
 
@@ -139,7 +139,7 @@ class ContentService
     public function getContentBySlug(string $slug, string $type = 'post', ?string $tenantType = null, int|string|null $tenantId = null): Content
     {
         $content = $this->contentRepository->findBySlug($slug, $type, includeTrashed: false, tenantType: $tenantType, tenantId: $tenantId);
-        if (! $content instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        if (! $content instanceof \Ttpryg\ContentEngine\Domain\Entity\Content) {
             throw ContentNotFoundException::bySlug($slug, $type);
         }
 
@@ -163,7 +163,7 @@ class ContentService
 
         // Sengaja includeTrashed: true agar slug milik item soft-deleted tidak dipakai ulang,
         // mencegah tabrakan unique key saat item tersebut di-restore().
-        while ($this->contentRepository->findBySlug($slug, $type, includeTrashed: true, tenantType: $tenantType, tenantId: $tenantId) instanceof \Ttpryg\ContentEngine\Entities\Content) {
+        while ($this->contentRepository->findBySlug($slug, $type, includeTrashed: true, tenantType: $tenantType, tenantId: $tenantId) instanceof \Ttpryg\ContentEngine\Domain\Entity\Content) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }

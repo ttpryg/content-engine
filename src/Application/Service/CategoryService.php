@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Services;
+namespace Ttpryg\ContentEngine\Application\Service;
 
-use Ttpryg\ContentEngine\Contracts\CategoryRepositoryInterface;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
-use Ttpryg\ContentEngine\Entities\Category;
-use Ttpryg\ContentEngine\Exceptions\CategoryNotFoundException;
+use Ttpryg\ContentEngine\Domain\Entity\Category;
+use Ttpryg\ContentEngine\Domain\Exception\CategoryNotFoundException;
+use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
 class CategoryService
@@ -35,7 +35,7 @@ class CategoryService
     public function attachCategoryToContent(int|string $contentId, int|string $categoryId): bool
     {
         $category = $this->categoryRepository->findById($categoryId);
-        if (! $category instanceof \Ttpryg\ContentEngine\Entities\Category) {
+        if (! $category instanceof \Ttpryg\ContentEngine\Domain\Entity\Category) {
             throw CategoryNotFoundException::byId($categoryId);
         }
 

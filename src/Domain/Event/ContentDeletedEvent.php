@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Events;
+namespace Ttpryg\ContentEngine\Domain\Event;
 
 class ContentDeletedEvent
 {
