@@ -29,6 +29,19 @@ class InMemoryRepositoriesTest extends TestCase
         $this->assertNull($repository->findById(999));
     }
 
+    public function test_find_by_slug_scopes_to_the_exact_tenant(): void
+    {
+        $repository = new InMemoryContentRepository;
+
+        $global = $repository->save(new Content('Global Promo', type: 'post', slug: 'promo'));
+        $store = $repository->save(new Content('Store Promo', type: 'post', slug: 'promo', tenantType: 'store', tenantId: '101'));
+
+        $this->assertSame($global, $repository->findBySlug('promo', 'post'));
+        $this->assertSame($store, $repository->findBySlug('promo', 'post', tenantType: 'store', tenantId: '101'));
+        $this->assertNull($repository->findBySlug('promo', 'post', tenantType: 'store', tenantId: '202'));
+        $this->assertNull($repository->findBySlug('promo', 'post', tenantType: 'company', tenantId: '101'));
+    }
+
     public function test_content_repository_filters_counts_and_searches(): void
     {
         $repository = new InMemoryContentRepository;
@@ -43,6 +56,7 @@ class InMemoryRepositoriesTest extends TestCase
         $this->assertCount(1, $repository->findByTenant('store', '101', 'post'));
         $this->assertCount(2, $repository->findByAuthorId(7));
         $this->assertSame(2, $repository->count(['status' => 'published']));
+        $this->assertSame(1, $repository->count(['search' => 'hello']));
         $this->assertCount(1, $repository->findAll([], limit: 0));
     }
 

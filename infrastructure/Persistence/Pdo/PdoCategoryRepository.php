@@ -6,7 +6,9 @@ namespace Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo;
 
 use DateTimeImmutable;
 use PDO;
+use PDOException;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
+use Ttpryg\ContentEngine\Domain\Exception\CategorySlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 
 class PdoCategoryRepository implements CategoryRepositoryInterface
@@ -54,12 +56,22 @@ class PdoCategoryRepository implements CategoryRepositoryInterface
     {
         $sql = "INSERT INTO {$this->table} (name, slug, type, created_at) VALUES (:name, :slug, :type, :created_at)";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'name' => $category->getName(),
-            'slug' => $category->getSlug(),
-            'type' => $category->getType(),
-            'created_at' => $category->getCreatedAt()?->format('Y-m-d H:i:s'),
-        ]);
+
+        try {
+            $stmt->execute([
+                'name' => $category->getName(),
+                'slug' => $category->getSlug(),
+                'type' => $category->getType(),
+                'created_at' => $category->getCreatedAt()?->format('Y-m-d H:i:s'),
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000'
+                && (stripos($e->getMessage(), 'unique') !== false || stripos($e->getMessage(), 'duplicate') !== false)) {
+                throw CategorySlugAlreadyExistsException::bySlug($category->getSlug());
+            }
+
+            throw $e;
+        }
 
         $id = $this->pdo->lastInsertId();
         if ($id === false) {

@@ -12,6 +12,7 @@ use Ttpryg\ContentEngine\Domain\Event\ContentCreatedEvent;
 use Ttpryg\ContentEngine\Domain\Event\ContentPublishedEvent;
 use Ttpryg\ContentEngine\Domain\Event\ContentViewedEvent;
 use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
+use Ttpryg\ContentEngine\Domain\Exception\ContentSlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
@@ -134,12 +135,24 @@ class ContentServiceTest extends TestCase
         $this->assertEquals('my-first-post-1', $content->getSlug());
     }
 
+    // INTEGRITY CASE: custom slug yang sudah dipakai harus ditolak, bukan ditimpa
+    public function test_create_content_rejects_duplicate_custom_slug(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $repo->method('findBySlug')->willReturn(new Content('Existing', slug: 'taken-slug'));
+
+        $this->expectException(ContentSlugAlreadyExistsException::class);
+
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
+        $contentService->createContent(new CreateContentRequest(title: 'New', slug: 'taken-slug'));
+    }
+
     // SCALABILITY CASE: Mode default — pembacaan menaikkan view_count dan memicu ContentViewedEvent
     public function test_get_content_by_slug_increments_views_and_dispatches_viewed_event(): void
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
-        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', id: 10);
+        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', status: 'published', id: 10);
 
         $repo->method('findBySlug')->willReturn($content);
         $repo->expects($this->once())
@@ -162,7 +175,7 @@ class ContentServiceTest extends TestCase
     {
         $repo = $this->createMock(ContentRepositoryInterface::class);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
-        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', id: 10);
+        $content = new Content('Viewed Post', type: 'post', slug: 'viewed-post', status: 'published', id: 10);
 
         $repo->method('findBySlug')->willReturn($content);
         // Inti test: TIDAK ada UPDATE view_count ke database pada mode defer.
@@ -177,6 +190,44 @@ class ContentServiceTest extends TestCase
         $result = $contentService->getContentBySlug('viewed-post');
 
         $this->assertEquals(10, $result->getId());
+    }
+
+    // SECURITY CASE: konten draft tidak boleh terbaca lewat API publik default
+    public function test_get_content_by_slug_hides_unpublished_content_by_default(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $content = new Content('Draft Post', type: 'post', slug: 'draft-post', status: 'draft', id: 11);
+        $repo->method('findBySlug')->willReturn($content);
+        $repo->expects($this->never())->method('incrementViews');
+
+        $this->expectException(ContentNotFoundException::class);
+
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
+        $contentService->getContentBySlug('draft-post');
+    }
+
+    // POSITIVE CASE: admin/preview dapat meminta status tertentu secara eksplisit
+    public function test_get_content_by_slug_allows_explicit_status_override(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+        $content = new Content('Draft Post', type: 'post', slug: 'draft-post', status: 'draft', id: 11);
+        $repo->method('findBySlug')->willReturn($content);
+        $repo->expects($this->once())->method('incrementViews')->with(11)->willReturn(true);
+
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
+        $result = $contentService->getContentBySlug('draft-post', status: 'draft');
+
+        $this->assertSame('Draft Post', $result->getTitle());
+    }
+
+    public function test_get_content_by_slug_rejects_invalid_status(): void
+    {
+        $repo = $this->createMock(ContentRepositoryInterface::class);
+
+        $this->expectException(InvalidContentStatusException::class);
+
+        $contentService = new ContentService($repo, new NativeSlugGenerator);
+        $contentService->getContentBySlug('any-post', status: 'unknown');
     }
 
     // NEGATIVE CASE: getContentBySlug pada konten tidak ada → ContentNotFoundException, tanpa increment

@@ -6,8 +6,10 @@ namespace Ttpryg\ContentEngine\Application\UseCase;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
 use Ttpryg\ContentEngine\Domain\Event\ContentViewedEvent;
 use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
 final class ViewContentUseCase
@@ -24,10 +26,17 @@ final class ViewContentUseCase
         private readonly bool $deferViewCounts = false
     ) {}
 
-    public function execute(string $slug, string $type = 'post', ?string $tenantType = null, int|string|null $tenantId = null): Content
-    {
+    public function execute(
+        string $slug,
+        string $type = 'post',
+        ?string $tenantType = null,
+        int|string|null $tenantId = null,
+        ContentStatus|string|null $status = ContentStatus::PUBLISHED
+    ): Content {
+        $statusValue = $this->normalizeStatus($status);
+
         $content = $this->contentRepository->findBySlug($slug, $type, includeTrashed: false, tenantType: $tenantType, tenantId: $tenantId);
-        if (! $content instanceof Content) {
+        if (! $content instanceof Content || ($statusValue !== null && $content->getStatus() !== $statusValue)) {
             throw ContentNotFoundException::bySlug($slug, $type);
         }
 
@@ -44,5 +53,23 @@ final class ViewContentUseCase
         }
 
         return $content;
+    }
+
+    private function normalizeStatus(ContentStatus|string|null $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        if ($status instanceof ContentStatus) {
+            return $status->value;
+        }
+
+        $resolved = ContentStatus::tryFrom($status);
+        if ($resolved === null) {
+            throw new InvalidContentStatusException($status);
+        }
+
+        return $resolved->value;
     }
 }

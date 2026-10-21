@@ -7,6 +7,7 @@ namespace Ttpryg\ContentEngine\Infrastructure\Persistence\InMemory;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Exception\ContentSlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
@@ -52,11 +53,15 @@ class InMemoryContentRepository implements ContentRepositoryInterface
                 continue;
             }
 
-            if ($tenantType !== null && $content->getTenantType() !== $tenantType) {
+            if ($content->getTenantType() !== $tenantType) {
                 continue;
             }
 
-            if ($tenantId !== null && (string) $content->getTenantId() !== (string) $tenantId) {
+            if ($tenantId === null) {
+                if ($content->getTenantId() !== null) {
+                    continue;
+                }
+            } elseif ((string) $content->getTenantId() !== (string) $tenantId) {
                 continue;
             }
 
@@ -116,8 +121,6 @@ class InMemoryContentRepository implements ContentRepositoryInterface
     /** @param array<string, mixed> $criteria */
     public function count(array $criteria = []): int
     {
-        unset($criteria['search']);
-
         return count(array_filter(
             $this->contents,
             fn (Content $content): bool => $this->matchesCriteria($content, $criteria)
@@ -126,6 +129,19 @@ class InMemoryContentRepository implements ContentRepositoryInterface
 
     public function save(Content $content): Content
     {
+        foreach ($this->contents as $existing) {
+            if ($existing === $content) {
+                continue;
+            }
+
+            if ($existing->getSlug() === $content->getSlug()
+                && $existing->getType() === $content->getType()
+                && $existing->getTenantType() === $content->getTenantType()
+                && (string) $existing->getTenantId() === (string) $content->getTenantId()) {
+                throw ContentSlugAlreadyExistsException::bySlug((string) $content->getSlug());
+            }
+        }
+
         $id = $content->getId();
 
         if ($id === null) {
