@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ttpryg\ContentEngine\Domain\ValueObject;
 
-class SeoMeta
+final class SeoMeta
 {
     public function __construct(
         public readonly ?string $metaTitle = null,
