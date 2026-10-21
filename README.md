@@ -19,14 +19,14 @@
 - **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision.
 - **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`.
 - **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), and parameterized PDO queries throughout.
-- **Versioned Schema Migrations**: `MigrationRunner` with a `content_engine_migrations` tracker table — incremental SQL migrations run once, are recorded only after success, and resume safely after failures.
+- **Versioned Schema Migrations**: PHP-based migrations backed by [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator) and a `content_engine_migrations` tracker table — migrations run once, are recorded only after success, support rollback, and resume safely after failures.
 - **Scalability Options**: `deferViewCounts: true` skips the per-read `UPDATE view_count` (avoids row-lock contention under heavy traffic); `ContentViewedEvent` provides the hook for async buffering (Redis / queue).
 
 ---
 
 ## 🗄️ Database Schema
 
-Run the SQL script from `database/schema.sql` (fresh install) or use `DatabaseMigrator` (see [Database Migrations](#-database-migrations)). The script also creates the `categories` and `content_category` (pivot) tables:
+Run the migrations with `DatabaseMigrator` (see [Database Migrations](#-database-migrations)). The resulting schema includes the `contents` table (shown below) plus the `categories` and `content_category` (pivot) tables:
 
 ```sql
 CREATE TABLE IF NOT EXISTS contents (
@@ -116,25 +116,20 @@ $categoryRepository = new InMemoryCategoryRepository;
 
 ## 🔄 Database Migrations
 
-**Fresh install** — bootstraps the full schema from `database/schema.sql` and records every bundled migration as a baseline (so they are never re-executed):
+Schema changes are managed by `DatabaseMigrator`, backed by [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator). Migrations live in `database/migrations/` as dated PHP classes and are tracked in the `content_engine_migrations` table. Each migration runs once in filename order, is recorded **only after success**, and is retried on the next run if it fails.
 
 ```php
-use Ttpryg\ContentEngine\Database\DatabaseMigrator;
+use Ttpryg\ContentEngine\Infrastructure\Database\DatabaseMigrator;
 
-(new DatabaseMigrator($pdo))->migrate();
+$migrator = new DatabaseMigrator($pdo);
+$migrator->migrate();              // create/upgrade the schema
+$migrator->rollback();             // revert the latest migration
+$migrator->appliedMigrations();    // full applied history
 ```
 
-**Existing database** (e.g. created before a newer schema change) — run pending migrations from `database/migrations/*.sql`. Each file executes once in name order, is recorded in the `content_engine_migrations` tracker table **only after success**, and is automatically retried on the next run if it fails:
+The baseline migration is driver-aware (SQLite and MySQL/MariaDB), creates the `contents`, `categories`, and `content_category` tables plus lookup indexes, and can be rolled back.
 
-```php
-use Ttpryg\ContentEngine\Database\MigrationRunner;
-
-$runner = new MigrationRunner($pdo);
-$runner->migrate();            // e.g. ['001_add_unique_tenant_slug']
-$runner->appliedMigrations();  // full applied history
-```
-
-> Migration `001_add_unique_tenant_slug` upgrades databases created before the multi-tenant slug unique key existed. Fresh installs skip it automatically (baseline).
+> Databases previously tracked by the SQL-based runner remain compatible: the legacy `001_add_unique_tenant_slug` record is recognised through the new migration's alias.
 
 ---
 
