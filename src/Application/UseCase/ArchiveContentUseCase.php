@@ -25,7 +25,7 @@ final class ArchiveContentUseCase
             throw ContentNotFoundException::byId($id);
         }
 
-        $content->setStatus(ContentStatus::ARCHIVED->value);
+        $content->setStatus(ContentStatus::ARCHIVED);
         $result = $this->contentRepository->update($content);
 
         if ($result) {
