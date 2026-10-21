@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SlugGeneratorInterface` in the constructor instead of creating a
   `NativeSlugGenerator` implicitly. Inject `NativeSlugGenerator` or a custom
   implementation from the composition root.
+- **Breaking:** `SeoMeta` and `TestimonialMeta` are now `final` value objects with
+  `readonly` properties; they can no longer be extended or mutated.
 - **Breaking:** `ContentType` is now a string-backed enum instead of a class of
   string constants. Use `ContentType::PAGE->value` where a raw string is still
   required.

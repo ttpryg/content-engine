@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Ttpryg\ContentEngine\Domain\ValueObject;
 
-class TestimonialMeta
+final class TestimonialMeta
 {
     public function __construct(
         public readonly ?string $company = null,
