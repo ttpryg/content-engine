@@ -3,8 +3,8 @@
 namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Application\Service\ContentService;
-use Ttpryg\ContentEngine\Contracts\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Event\ContentCreatedEvent;
