@@ -177,6 +177,16 @@ class Content implements ContentInterface
         return $this;
     }
 
+    public function publish(): self
+    {
+        return $this->setStatus(ContentStatus::PUBLISHED);
+    }
+
+    public function archive(): self
+    {
+        return $this->setStatus(ContentStatus::ARCHIVED);
+    }
+
     public function getSortOrder(): int
     {
         return $this->sortOrder;

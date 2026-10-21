@@ -12,6 +12,7 @@ use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
 use Ttpryg\ContentEngine\Domain\Event\ContentCreatedEvent;
 use Ttpryg\ContentEngine\Domain\Event\ContentPublishedEvent;
+use Ttpryg\ContentEngine\Domain\Exception\ContentSlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
@@ -27,12 +28,14 @@ final class CreateContentUseCase
     {
         $status = ContentStatus::tryFrom($request->status) ?? throw new InvalidContentStatusException($request->status);
 
-        $generatedSlug = $request->slug ?: $this->generateUniqueSlug(
-            $request->title,
-            $request->type,
-            $request->tenantType,
-            $request->tenantId
-        );
+        $generatedSlug = $request->slug !== null && $request->slug !== ''
+            ? $this->resolveRequestedSlug($request->slug, $request->type, $request->tenantType, $request->tenantId)
+            : $this->generateUniqueSlug(
+                $request->title,
+                $request->type,
+                $request->tenantType,
+                $request->tenantId
+            );
 
         $publishedAt = $status === ContentStatus::PUBLISHED ? new DateTimeImmutable : null;
 
@@ -60,6 +63,15 @@ final class CreateContentUseCase
         }
 
         return $savedContent;
+    }
+
+    private function resolveRequestedSlug(string $slug, string $type, ?string $tenantType = null, int|string|null $tenantId = null): string
+    {
+        if ($this->contentRepository->findBySlug($slug, $type, includeTrashed: true, tenantType: $tenantType, tenantId: $tenantId) instanceof Content) {
+            throw ContentSlugAlreadyExistsException::bySlug($slug);
+        }
+
+        return $slug;
     }
 
     private function generateUniqueSlug(string $title, string $type, ?string $tenantType = null, int|string|null $tenantId = null): string

@@ -34,3 +34,43 @@ jobs:
 
       - name: Run PHPUnit tests
         run: composer test
+
+  mysql:
+    name: MySQL 8 Integration
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: content_engine
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      CONTENT_ENGINE_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=content_engine
+      CONTENT_ENGINE_MYSQL_USER: root
+      CONTENT_ENGINE_MYSQL_PASSWORD: root
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo, pdo_mysql, json, mbstring
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHPUnit tests
+        run: composer test

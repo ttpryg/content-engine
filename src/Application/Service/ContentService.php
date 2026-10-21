@@ -13,6 +13,7 @@ use Ttpryg\ContentEngine\Application\UseCase\PublishContentUseCase;
 use Ttpryg\ContentEngine\Application\UseCase\ViewContentUseCase;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
 class ContentService
@@ -60,8 +61,13 @@ class ContentService
         return $this->deleteContentUseCase->execute($id, $softDelete);
     }
 
-    public function getContentBySlug(string $slug, string $type = 'post', ?string $tenantType = null, int|string|null $tenantId = null): Content
-    {
-        return $this->viewContentUseCase->execute($slug, $type, $tenantType, $tenantId);
+    public function getContentBySlug(
+        string $slug,
+        string $type = 'post',
+        ?string $tenantType = null,
+        int|string|null $tenantId = null,
+        ContentStatus|string|null $status = ContentStatus::PUBLISHED
+    ): Content {
+        return $this->viewContentUseCase->execute($slug, $type, $tenantType, $tenantId, $status);
     }
 }

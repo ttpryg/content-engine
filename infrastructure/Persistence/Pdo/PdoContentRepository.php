@@ -6,7 +6,9 @@ namespace Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo;
 
 use DateTimeImmutable;
 use PDO;
+use PDOException;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Exception\ContentSlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
@@ -24,7 +26,16 @@ class PdoContentRepository implements ContentRepositoryInterface
      */
     private const MAX_LIMIT = 100;
 
-    public function __construct(private readonly PDO $pdo, private readonly string $table = 'contents') {}
+    private readonly string $table;
+
+    public function __construct(private readonly PDO $pdo, string $table = 'contents')
+    {
+        if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $table) !== 1) {
+            throw new \InvalidArgumentException("Invalid table name '{$table}'.");
+        }
+
+        $this->table = $table;
+    }
 
     public function findById(int|string $id, bool $includeTrashed = false): ?Content
     {
@@ -50,12 +61,16 @@ class PdoContentRepository implements ContentRepositoryInterface
             $sql .= ' AND deleted_at IS NULL';
         }
 
-        if ($tenantType !== null) {
+        if ($tenantType === null) {
+            $sql .= ' AND tenant_type IS NULL';
+        } else {
             $sql .= ' AND tenant_type = :tenant_type';
             $params['tenant_type'] = $tenantType;
         }
 
-        if ($tenantId !== null) {
+        if ($tenantId === null) {
+            $sql .= ' AND tenant_id IS NULL';
+        } else {
             $sql .= ' AND tenant_id = :tenant_id';
             $params['tenant_id'] = $tenantId;
         }
@@ -141,8 +156,8 @@ class PdoContentRepository implements ContentRepositoryInterface
         }
 
         if (isset($criteria['search'])) {
-            $where[] = '(title LIKE :search OR body LIKE :search)';
-            $params['search'] = '%'.$criteria['search'].'%';
+            $where[] = "(title LIKE :search ESCAPE '!' OR body LIKE :search ESCAPE '!')";
+            $params['search'] = $this->searchPattern((string) $criteria['search']);
         }
 
         $whereSql = implode(' AND ', $where);
@@ -215,6 +230,11 @@ class PdoContentRepository implements ContentRepositoryInterface
             $params['author_id'] = $criteria['author_id'];
         }
 
+        if (isset($criteria['search'])) {
+            $where[] = "(title LIKE :search ESCAPE '!' OR body LIKE :search ESCAPE '!')";
+            $params['search'] = $this->searchPattern((string) $criteria['search']);
+        }
+
         $whereSql = implode(' AND ', $where);
         $sql = "SELECT COUNT(*) FROM {$this->table} WHERE {$whereSql}";
 
@@ -231,23 +251,32 @@ class PdoContentRepository implements ContentRepositoryInterface
                 VALUES (:tenant_type, :tenant_id, :author_id, :type, :title, :slug, :summary, :body, :meta, :status, :sort_order, :view_count, :published_at, :created_at, :updated_at)";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'tenant_type' => $content->getTenantType(),
-            'tenant_id' => $content->getTenantId(),
-            'author_id' => $content->getAuthorId(),
-            'type' => $content->getType(),
-            'title' => $content->getTitle(),
-            'slug' => $content->getSlug(),
-            'summary' => $content->getSummary(),
-            'body' => $content->getBody(),
-            'meta' => json_encode($content->getMeta()),
-            'status' => $content->getStatus(),
-            'sort_order' => $content->getSortOrder(),
-            'view_count' => $content->getViewCount(),
-            'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
-            'created_at' => $content->getCreatedAt()?->format('Y-m-d H:i:s'),
-            'updated_at' => $content->getUpdatedAt()?->format('Y-m-d H:i:s'),
-        ]);
+        try {
+            $stmt->execute([
+                'tenant_type' => $content->getTenantType(),
+                'tenant_id' => $content->getTenantId(),
+                'author_id' => $content->getAuthorId(),
+                'type' => $content->getType(),
+                'title' => $content->getTitle(),
+                'slug' => $content->getSlug(),
+                'summary' => $content->getSummary(),
+                'body' => $content->getBody(),
+                'meta' => $this->encodeMeta($content->getMeta()),
+                'status' => $content->getStatus(),
+                'sort_order' => $content->getSortOrder(),
+                'view_count' => $content->getViewCount(),
+                'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
+                'created_at' => $content->getCreatedAt()?->format('Y-m-d H:i:s'),
+                'updated_at' => $content->getUpdatedAt()?->format('Y-m-d H:i:s'),
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000'
+                && (stripos($e->getMessage(), 'unique') !== false || stripos($e->getMessage(), 'duplicate') !== false)) {
+                throw ContentSlugAlreadyExistsException::bySlug((string) $content->getSlug());
+            }
+
+            throw $e;
+        }
 
         $id = $this->pdo->lastInsertId();
         if ($id === false) {
@@ -279,23 +308,32 @@ class PdoContentRepository implements ContentRepositoryInterface
 
         $stmt = $this->pdo->prepare($sql);
 
-        return $stmt->execute([
-            'id' => $content->getId(),
-            'tenant_type' => $content->getTenantType(),
-            'tenant_id' => $content->getTenantId(),
-            'author_id' => $content->getAuthorId(),
-            'type' => $content->getType(),
-            'title' => $content->getTitle(),
-            'slug' => $content->getSlug(),
-            'summary' => $content->getSummary(),
-            'body' => $content->getBody(),
-            'meta' => json_encode($content->getMeta()),
-            'status' => $content->getStatus(),
-            'sort_order' => $content->getSortOrder(),
-            'view_count' => $content->getViewCount(),
-            'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
-            'updated_at' => (new DateTimeImmutable)->format('Y-m-d H:i:s'),
-        ]);
+        try {
+            return $stmt->execute([
+                'id' => $content->getId(),
+                'tenant_type' => $content->getTenantType(),
+                'tenant_id' => $content->getTenantId(),
+                'author_id' => $content->getAuthorId(),
+                'type' => $content->getType(),
+                'title' => $content->getTitle(),
+                'slug' => $content->getSlug(),
+                'summary' => $content->getSummary(),
+                'body' => $content->getBody(),
+                'meta' => $this->encodeMeta($content->getMeta()),
+                'status' => $content->getStatus(),
+                'sort_order' => $content->getSortOrder(),
+                'view_count' => $content->getViewCount(),
+                'published_at' => $content->getPublishedAt()?->format('Y-m-d H:i:s'),
+                'updated_at' => (new DateTimeImmutable)->format('Y-m-d H:i:s'),
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000'
+                && (stripos($e->getMessage(), 'unique') !== false || stripos($e->getMessage(), 'duplicate') !== false)) {
+                throw ContentSlugAlreadyExistsException::bySlug((string) $content->getSlug());
+            }
+
+            throw $e;
+        }
     }
 
     public function delete(int|string $id, bool $softDelete = true): bool
@@ -377,5 +415,16 @@ class PdoContentRepository implements ContentRepositoryInterface
     private function dateTimeOrNull(mixed $value): ?DateTimeImmutable
     {
         return is_string($value) && $value !== '' ? new DateTimeImmutable($value) : null;
+    }
+
+    /** @param array<string, mixed> $meta */
+    private function encodeMeta(array $meta): string
+    {
+        return json_encode($meta, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+
+    private function searchPattern(string $search): string
+    {
+        return '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
     }
 }

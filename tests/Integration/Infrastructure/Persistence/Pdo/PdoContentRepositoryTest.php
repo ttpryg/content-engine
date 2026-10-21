@@ -71,6 +71,18 @@ class PdoContentRepositoryTest extends TestCase
         $this->assertEquals(['author_name' => 'Admin'], $found->getMeta());
     }
 
+    // SECURITY CASE: findBySlug tidak membocorkan konten tenant lain saat scope global
+    public function test_find_by_slug_scopes_to_the_exact_tenant(): void
+    {
+        $global = $this->pdoContentRepository->save(new Content('Global Promo', type: 'post', slug: 'promo'));
+        $store = $this->pdoContentRepository->save(new Content('Store Promo', type: 'post', slug: 'promo', tenantType: 'store', tenantId: '101'));
+
+        $this->assertEquals($this->idOf($global), $this->idOf($this->pdoContentRepository->findBySlug('promo', 'post') ?? throw new \RuntimeException('Expected global content.')));
+        $this->assertEquals($this->idOf($store), $this->idOf($this->pdoContentRepository->findBySlug('promo', 'post', tenantType: 'store', tenantId: '101') ?? throw new \RuntimeException('Expected store content.')));
+        $this->assertNull($this->pdoContentRepository->findBySlug('promo', 'post', tenantType: 'store', tenantId: '202'));
+        $this->assertNull($this->pdoContentRepository->findBySlug('promo', 'post', tenantType: 'company', tenantId: '101'));
+    }
+
     // POSITIVE CASE: Find By Tenant (Multi-Store / Multi-Tenant Scoping)
     public function test_find_by_tenant(): void
     {
@@ -109,6 +121,22 @@ class PdoContentRepositoryTest extends TestCase
         $updated = $this->pdoContentRepository->findById($this->idOf($publishedPosts[0]))
             ?? throw new \RuntimeException('Expected updated content.');
         $this->assertEquals(1, $updated->getViewCount());
+    }
+
+    public function test_rejects_unsafe_table_name(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new PdoContentRepository($this->pdo, 'contents; DROP TABLE contents');
+    }
+
+    public function test_search_treats_like_wildcards_as_literals(): void
+    {
+        $this->pdoContentRepository->save(new Content('Diskon 100% Spesial', type: 'post', slug: 'diskon'));
+
+        $this->assertCount(1, $this->pdoContentRepository->findAll(['search' => '100%']));
+        $this->assertCount(0, $this->pdoContentRepository->findAll(['search' => '100_']));
+        $this->assertSame(1, $this->pdoContentRepository->count(['search' => '100%']));
     }
 
     // NEGATIVE/SOFT DELETE CASE

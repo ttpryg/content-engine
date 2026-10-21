@@ -7,6 +7,7 @@ use Ttpryg\ContentEngine\Application\Service\CategoryService;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Category;
 use Ttpryg\ContentEngine\Domain\Exception\CategoryNotFoundException;
+use Ttpryg\ContentEngine\Domain\Exception\CategorySlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 use Ttpryg\ContentEngine\Utilities\NativeSlugGenerator;
 
@@ -57,6 +58,40 @@ class CategoryServiceTest extends TestCase
         $this->assertEquals(7, $category->getId());
         $this->assertEquals('custom-news', $category->getSlug());
         $this->assertEquals('tag', $category->getType());
+    }
+
+    // INTEGRITY CASE: slug generate otomatis diberi suffix saat sudah dipakai
+    public function test_create_category_resolves_generated_slug_collision(): void
+    {
+        $repo = $this->createMock(CategoryRepositoryInterface::class);
+        $slugGen = $this->createMock(SlugGeneratorInterface::class);
+
+        $slugGen->method('generate')->willReturn('my-category');
+        $repo->method('findBySlug')->willReturnCallback(
+            fn (string $slug): ?Category => $slug === 'my-category' ? new Category('Existing', 'my-category') : null
+        );
+        $repo->method('save')->willReturnCallback(function (Category $category): Category {
+            $category->setId(1);
+
+            return $category;
+        });
+
+        $categoryService = new CategoryService($repo, $slugGen);
+        $category = $categoryService->createCategory('My Category');
+
+        $this->assertSame('my-category-1', $category->getSlug());
+    }
+
+    // INTEGRITY CASE: custom slug duplikat ditolak dengan exception domain
+    public function test_create_category_rejects_duplicate_custom_slug(): void
+    {
+        $repo = $this->createMock(CategoryRepositoryInterface::class);
+        $repo->method('findBySlug')->willReturn(new Category('Existing', 'taken-slug'));
+
+        $this->expectException(CategorySlugAlreadyExistsException::class);
+
+        $categoryService = new CategoryService($repo, new NativeSlugGenerator);
+        $categoryService->createCategory('New', slug: 'taken-slug');
     }
 
     // POSITIVE CASE: Attach kategori yang ada ke konten

@@ -6,7 +6,10 @@ namespace Ttpryg\ContentEngine\Tests\Integration\Infrastructure\Database;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Exception\ContentSlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Infrastructure\Database\DatabaseMigrator;
+use Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo\PdoContentRepository;
 
 class DatabaseMigratorTest extends TestCase
 {
@@ -27,6 +30,7 @@ class DatabaseMigratorTest extends TestCase
         $this->assertSame([
             '202609170001_create_content_tables',
             '202610160001_add_unique_tenant_slug',
+            '202610210001_add_unique_global_slug',
         ], $executed);
         $this->assertSame($executed, $migrator->appliedMigrations());
 
@@ -34,6 +38,7 @@ class DatabaseMigratorTest extends TestCase
         $this->assertTrue($this->tableExists('categories'));
         $this->assertTrue($this->tableExists('content_category'));
         $this->assertTrue($this->indexExists('uk_tenant_slug'));
+        $this->assertTrue($this->indexExists('uk_global_slug'));
         $this->assertTrue($this->indexExists('idx_tenant_content'));
     }
 
@@ -43,13 +48,17 @@ class DatabaseMigratorTest extends TestCase
         $migrator->migrate();
 
         $this->assertSame([], $migrator->migrate());
-        $this->assertCount(2, $migrator->appliedMigrations());
+        $this->assertCount(3, $migrator->appliedMigrations());
     }
 
     public function test_rollback_reverts_migrations_in_reverse_order(): void
     {
         $migrator = new DatabaseMigrator($this->pdo);
         $migrator->migrate();
+
+        $this->assertSame(['202610210001_add_unique_global_slug'], $migrator->rollback());
+        $this->assertFalse($this->indexExists('uk_global_slug'));
+        $this->assertTrue($this->tableExists('contents'));
 
         $this->assertSame(['202610160001_add_unique_tenant_slug'], $migrator->rollback());
         $this->assertFalse($this->indexExists('uk_tenant_slug'));
@@ -81,7 +90,7 @@ class DatabaseMigratorTest extends TestCase
 
         $executed = $migrator->migrate();
 
-        $this->assertSame(['202609170001_create_content_tables'], $executed);
+        $this->assertSame(['202609170001_create_content_tables', '202610210001_add_unique_global_slug'], $executed);
         $this->assertNotContains('202610160001_add_unique_tenant_slug', $migrator->appliedMigrations());
         $this->assertTrue($this->indexExists('uk_tenant_slug'));
     }
@@ -92,8 +101,35 @@ class DatabaseMigratorTest extends TestCase
 
         $recorded = $migrator->markAllAsMigrated();
 
-        $this->assertCount(2, $recorded);
+        $this->assertCount(3, $recorded);
         $this->assertFalse($this->tableExists('contents'));
+    }
+
+    public function test_global_slug_uniqueness_is_enforced_for_null_tenants(): void
+    {
+        (new DatabaseMigrator($this->pdo))->migrate();
+        $repository = new PdoContentRepository($this->pdo);
+
+        $repository->save(new Content('Global', type: 'post', slug: 'promo'));
+
+        $this->expectException(ContentSlugAlreadyExistsException::class);
+        $repository->save(new Content('Duplicate Global', type: 'post', slug: 'promo'));
+    }
+
+    public function test_same_slug_is_allowed_across_different_tenants(): void
+    {
+        (new DatabaseMigrator($this->pdo))->migrate();
+        $repository = new PdoContentRepository($this->pdo);
+
+        $repository->save(new Content('Global', type: 'post', slug: 'promo'));
+        $repository->save(new Content('Store 101', type: 'post', slug: 'promo', tenantType: 'store', tenantId: '101'));
+        $repository->save(new Content('Store 202', type: 'post', slug: 'promo', tenantType: 'store', tenantId: '202'));
+
+        $this->assertSame('Global', $repository->findBySlug('promo', 'post')?->getTitle());
+        $this->assertSame('Store 101', $repository->findBySlug('promo', 'post', tenantType: 'store', tenantId: '101')?->getTitle());
+
+        $this->expectException(ContentSlugAlreadyExistsException::class);
+        $repository->save(new Content('Store 101 Duplicate', type: 'post', slug: 'promo', tenantType: 'store', tenantId: '101'));
     }
 
     private function tableExists(string $table): bool

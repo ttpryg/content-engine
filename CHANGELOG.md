@@ -16,9 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `require-dev`.
 - Unit coverage for value objects, enums, DTOs, and domain events; tests are now
   organised by domain, application, and infrastructure layers.
+- MySQL 8 integration coverage for migrations and global slug uniqueness.
 
 ### Changed
 
+- **Breaking:** `findBySlug()` now always scopes to the exact tenant. A `null`
+  tenant means global content (`tenant_type IS NULL`, `tenant_id IS NULL`) instead
+  of skipping the tenant filter. This prevents cross-tenant content leaks.
+- **Breaking:** `getContentBySlug()` now returns only `published` content by
+  default. Pass `status: null` for an unrestricted admin preview or an explicit
+  status for other workflows.
+- **Breaking:** duplicate explicit slugs now throw
+  `ContentSlugAlreadyExistsException` / `CategorySlugAlreadyExistsException`
+  instead of being silently accepted or surfacing a raw `PDOException`.
+- Added a generated `global_slug_key` column and unique index so global slugs are
+  protected even though MySQL and SQLite treat `NULL` tenant columns as distinct.
+- Hardened persistence: validated table names, escaped `LIKE` search patterns, and
+  JSON encoding now throws on invalid data instead of silently writing empty meta.
+- Added explicit `publish()` / `archive()` transitions on `Content`.
 - **Breaking:** separated the domain and application layers. Entities, value objects,
   enums, events, repository interfaces, and exceptions now live under
   `Ttpryg\ContentEngine\Domain\*`, while application services moved to

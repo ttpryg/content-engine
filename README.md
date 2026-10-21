@@ -16,10 +16,12 @@
 - **Strongly Typed Meta Wrappers**:
   - `TestimonialMeta`: Company, Position, Rating, Avatar URL.
   - `SeoMeta`: Meta Title, Meta Description, OG Image, Keywords.
-- **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision.
+- **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision. Explicit duplicate slugs are rejected with a domain exception, and global slugs are protected by a dedicated unique index.
 - **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`, dispatched through the PSR-14 `Psr\EventDispatcher\EventDispatcherInterface` so any compliant dispatcher can be used.
 - **Explicit Use Cases & DTOs**: content create/publish/archive/delete/view actions live in `Application\UseCase`, with `CreateContentRequest` replacing long primitive argument lists; `ContentService` remains the convenience facade.
-- **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), and parameterized PDO queries throughout.
+- **Tenant-Exact Reads**: `findBySlug()` always scopes to the exact tenant, or to global content when the tenant is `null`, so a global lookup cannot leak another tenant's content.
+- **Published-by-Default Reads**: `getContentBySlug()` only returns `published` content. Pass `status: null` (or an explicit status) for admin previews.
+- **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), escaped `LIKE` searches, validated table names, and parameterized PDO queries throughout.
 - **Versioned Schema Migrations**: PHP-based migrations backed by [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator) and a `content_engine_migrations` tracker table — migrations run once, are recorded only after success, support rollback, and resume safely after failures.
 - **Scalability Options**: `deferViewCounts: true` skips the per-read `UPDATE view_count` (avoids row-lock contention under heavy traffic); `ContentViewedEvent` provides the hook for async buffering (Redis / queue).
 
@@ -130,7 +132,7 @@ $migrator->rollback();             // revert the latest migration
 $migrator->appliedMigrations();    // full applied history
 ```
 
-The baseline migration is driver-aware (SQLite and MySQL/MariaDB), creates the `contents`, `categories`, and `content_category` tables plus lookup indexes, and can be rolled back.
+The baseline migration is driver-aware (SQLite and MySQL/MariaDB), creates the `contents`, `categories`, and `content_category` tables plus lookup indexes, and can be rolled back. A dedicated migration adds a generated `global_slug_key` and unique index so slugs for global content (nullable tenant columns) are also protected on both MySQL and SQLite.
 
 > Databases previously tracked by the SQL-based runner remain compatible: the legacy `001_add_unique_tenant_slug` record is recognised through the new migration's alias.
 
@@ -154,12 +156,14 @@ $contentService = new ContentService(
 
 `ContentViewedEvent` is still dispatched on every read — subscribe a listener that buffers counts (e.g. in Redis or `_modules/queue`) and flushes them in batches. The default (`deferViewCounts: false`) preserves the original behaviour.
 
+Public reads are restricted to `published` content by default. Pass `status: null` to include any status (for example in an authenticated admin preview), or pass `status: 'draft'` explicitly.
+
 ---
 
 ## 🛠️ Development
 
 ```bash
-composer test      # PHPUnit (unit + integration, in-memory SQLite)
+composer test      # PHPUnit (unit + integration, in-memory SQLite; MySQL when CONTENT_ENGINE_MYSQL_DSN is set)
 composer analyse   # PHPStan level 8 (src, infrastructure, migrations, tests)
 composer fix       # Rector + Pint (auto-fix)
 composer fix:check # Rector dry-run + Pint test + PHPStan (CI gate)

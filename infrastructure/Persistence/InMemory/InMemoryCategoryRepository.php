@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ttpryg\ContentEngine\Infrastructure\Persistence\InMemory;
 
 use Ttpryg\ContentEngine\Domain\Entity\Category;
+use Ttpryg\ContentEngine\Domain\Exception\CategorySlugAlreadyExistsException;
 use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 
 class InMemoryCategoryRepository implements CategoryRepositoryInterface
@@ -55,6 +56,12 @@ class InMemoryCategoryRepository implements CategoryRepositoryInterface
 
     public function save(Category $category): Category
     {
+        foreach ($this->categories as $existing) {
+            if ($existing !== $category && $existing->getSlug() === $category->getSlug()) {
+                throw CategorySlugAlreadyExistsException::bySlug($category->getSlug());
+            }
+        }
+
         $id = $category->getId();
 
         if ($id === null) {

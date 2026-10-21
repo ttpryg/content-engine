@@ -64,6 +64,21 @@ class ContentEntityTest extends TestCase
         $this->assertSame('published', $content->getStatus());
     }
 
+    // POSITIVE CASE: explicit lifecycle transitions
+    public function test_publish_and_archive_transition_status(): void
+    {
+        $content = new Content(title: 'Some Page');
+
+        $content->publish();
+        $this->assertSame('published', $content->getStatus());
+
+        $content->archive();
+        $this->assertSame('archived', $content->getStatus());
+
+        $content->publish();
+        $this->assertSame('published', $content->getStatus());
+    }
+
     // NEGATIVE CASE: setStatus Rejects Invalid String
     public function test_set_status_rejects_invalid_string(): void
     {

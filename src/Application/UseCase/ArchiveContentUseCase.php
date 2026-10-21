@@ -6,7 +6,6 @@ namespace Ttpryg\ContentEngine\Application\UseCase;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
-use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
 use Ttpryg\ContentEngine\Domain\Event\ContentArchivedEvent;
 use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
 use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
@@ -25,7 +24,7 @@ final class ArchiveContentUseCase
             throw ContentNotFoundException::byId($id);
         }
 
-        $content->setStatus(ContentStatus::ARCHIVED);
+        $content->archive();
         $result = $this->contentRepository->update($content);
 
         if ($result) {
