@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\ValueObjects\TestimonialMeta;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\ValueObject\TestimonialMeta;
 
 class ContentEntityTest extends TestCase
 {

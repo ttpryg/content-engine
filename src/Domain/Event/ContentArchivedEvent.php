@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Events;
+namespace Ttpryg\ContentEngine\Domain\Event;
 
-use Ttpryg\ContentEngine\Entities\Content;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
 
-class ContentPublishedEvent
+class ContentArchivedEvent
 {
     public function __construct(
         public readonly Content $content

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Entities;
+namespace Ttpryg\ContentEngine\Domain\Entity;
 
 use DateTimeImmutable;
 use DateTimeInterface;

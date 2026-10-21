@@ -4,10 +4,10 @@ namespace Ttpryg\ContentEngine\Tests\Integration;
 
 use PDO;
 use PHPUnit\Framework\TestCase;
-use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\Exceptions\InvalidOrderByException;
+use Ttpryg\ContentEngine\Application\Service\ContentService;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidOrderByException;
 use Ttpryg\ContentEngine\Repositories\PdoContentRepository;
-use Ttpryg\ContentEngine\Services\ContentService;
 
 class PdoContentRepositoryTest extends TestCase
 {

@@ -6,8 +6,8 @@ namespace Ttpryg\ContentEngine\Repositories;
 
 use DateTimeImmutable;
 use PDO;
-use Ttpryg\ContentEngine\Contracts\CategoryRepositoryInterface;
-use Ttpryg\ContentEngine\Entities\Category;
+use Ttpryg\ContentEngine\Domain\Entity\Category;
+use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 
 class PdoCategoryRepository implements CategoryRepositoryInterface
 {

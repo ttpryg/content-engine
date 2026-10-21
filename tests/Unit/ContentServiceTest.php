@@ -3,16 +3,16 @@
 namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Ttpryg\ContentEngine\Contracts\ContentRepositoryInterface;
+use Ttpryg\ContentEngine\Application\Service\ContentService;
 use Ttpryg\ContentEngine\Contracts\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
-use Ttpryg\ContentEngine\Entities\Content;
-use Ttpryg\ContentEngine\Events\ContentCreatedEvent;
-use Ttpryg\ContentEngine\Events\ContentPublishedEvent;
-use Ttpryg\ContentEngine\Events\ContentViewedEvent;
-use Ttpryg\ContentEngine\Exceptions\ContentNotFoundException;
-use Ttpryg\ContentEngine\Exceptions\InvalidContentStatusException;
-use Ttpryg\ContentEngine\Services\ContentService;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
+use Ttpryg\ContentEngine\Domain\Event\ContentCreatedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentPublishedEvent;
+use Ttpryg\ContentEngine\Domain\Event\ContentViewedEvent;
+use Ttpryg\ContentEngine\Domain\Exception\ContentNotFoundException;
+use Ttpryg\ContentEngine\Domain\Exception\InvalidContentStatusException;
+use Ttpryg\ContentEngine\Domain\Repository\ContentRepositoryInterface;
 
 class ContentServiceTest extends TestCase
 {
@@ -28,7 +28,7 @@ class ContentServiceTest extends TestCase
 
         $repo->expects($this->once())
             ->method('save')
-            ->willReturnCallback(function (Content $content): \Ttpryg\ContentEngine\Entities\Content {
+            ->willReturnCallback(function (Content $content): \Ttpryg\ContentEngine\Domain\Entity\Content {
                 $content->setId(1);
 
                 return $content;

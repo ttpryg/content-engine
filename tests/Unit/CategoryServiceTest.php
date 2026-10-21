@@ -3,11 +3,11 @@
 namespace Ttpryg\ContentEngine\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Ttpryg\ContentEngine\Contracts\CategoryRepositoryInterface;
+use Ttpryg\ContentEngine\Application\Service\CategoryService;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
-use Ttpryg\ContentEngine\Entities\Category;
-use Ttpryg\ContentEngine\Exceptions\CategoryNotFoundException;
-use Ttpryg\ContentEngine\Services\CategoryService;
+use Ttpryg\ContentEngine\Domain\Entity\Category;
+use Ttpryg\ContentEngine\Domain\Exception\CategoryNotFoundException;
+use Ttpryg\ContentEngine\Domain\Repository\CategoryRepositoryInterface;
 
 class CategoryServiceTest extends TestCase
 {

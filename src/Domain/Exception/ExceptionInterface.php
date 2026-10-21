@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Exceptions;
+namespace Ttpryg\ContentEngine\Domain\Exception;
 
 use Throwable;
 

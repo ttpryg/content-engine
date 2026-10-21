@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Contracts;
+namespace Ttpryg\ContentEngine\Domain\Repository;
 
-use Ttpryg\ContentEngine\Entities\Content;
+use Ttpryg\ContentEngine\Domain\Entity\Content;
 
 interface ContentRepositoryInterface
 {

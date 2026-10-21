@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\ValueObjects;
+namespace Ttpryg\ContentEngine\Domain\ValueObject;
 
 class TestimonialMeta
 {

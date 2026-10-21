@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Ttpryg\ContentEngine\Entities;
+namespace Ttpryg\ContentEngine\Domain\Entity;
 
 use DateTimeImmutable;
 use DateTimeInterface;
 use Ttpryg\ContentEngine\Contracts\ContentInterface;
-use Ttpryg\ContentEngine\ValueObjects\ContentStatus;
+use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;
 
 class Content implements ContentInterface
 {
