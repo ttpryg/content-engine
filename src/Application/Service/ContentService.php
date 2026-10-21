@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Ttpryg\ContentEngine\Application\Service;
 
 use DateTimeImmutable;
-use Ttpryg\ContentEngine\Contracts\EventDispatcherInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Ttpryg\ContentEngine\Contracts\SlugGeneratorInterface;
 use Ttpryg\ContentEngine\Domain\Entity\Content;
 use Ttpryg\ContentEngine\Domain\Enum\ContentStatus;

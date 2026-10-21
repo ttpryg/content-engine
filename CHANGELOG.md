@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Ttpryg\ContentEngine\Infrastructure\Persistence\Pdo`. The module core now depends
   only on repository ports; register the `Infrastructure` PSR-4 namespace when using
   the bundled adapters.
+- **Breaking:** replaced the concrete `ttpryg/event-dispatcher` dependency with the
+  PSR-14 standard `psr/event-dispatcher` and removed the module-specific
+  `Contracts\EventDispatcherInterface`. `ContentService` now accepts
+  `Psr\EventDispatcher\EventDispatcherInterface` directly; `ttpryg/event-dispatcher`
+  is recommended in `suggest` for consumers who need an implementation.
 - **Breaking:** replaced the custom migration runner with
   [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator). Migrations
   are now dated PHP classes with `up()` and `down()` support; the entry point moved to

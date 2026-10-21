@@ -17,7 +17,7 @@
   - `TestimonialMeta`: Company, Position, Rating, Avatar URL.
   - `SeoMeta`: Meta Title, Meta Description, OG Image, Keywords.
 - **Automatic Slug Generator**: Converts titles to clean URLs with collision resolution (e.g. `my-post-1`, `my-post-2`), including soft-deleted entries so `restore()` never hits a unique-key collision.
-- **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`.
+- **Domain Events**: `ContentCreatedEvent`, `ContentPublishedEvent`, `ContentArchivedEvent`, `ContentDeletedEvent`, `ContentViewedEvent`, dispatched through the PSR-14 `Psr\EventDispatcher\EventDispatcherInterface` so any compliant dispatcher can be used.
 - **Security Hardening**: `ORDER BY` column whitelist (unknown columns throw `InvalidOrderByException`), pagination clamped to 1–100 rows (DoS prevention), and parameterized PDO queries throughout.
 - **Versioned Schema Migrations**: PHP-based migrations backed by [`ttpryg/database-migrator`](https://github.com/ttpryg/database-migrator) and a `content_engine_migrations` tracker table — migrations run once, are recorded only after success, support rollback, and resume safely after failures.
 - **Scalability Options**: `deferViewCounts: true` skips the per-read `UPDATE view_count` (avoids row-lock contention under heavy traffic); `ContentViewedEvent` provides the hook for async buffering (Redis / queue).
