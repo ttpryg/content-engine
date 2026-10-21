@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SlugGeneratorInterface` in the constructor instead of creating a
   `NativeSlugGenerator` implicitly. Inject `NativeSlugGenerator` or a custom
   implementation from the composition root.
+- **Breaking:** `ContentType` is now a string-backed enum instead of a class of
+  string constants. Use `ContentType::PAGE->value` where a raw string is still
+  required.
 - **Breaking:** `Content` now stores status as the `ContentStatus` enum. Invalid
   status values passed to the constructor or `setStatus()` throw
   `InvalidContentStatusException` instead of being silently ignored or reset to
